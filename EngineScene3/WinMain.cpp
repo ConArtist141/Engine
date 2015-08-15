@@ -1,7 +1,6 @@
 #include "RenderWindow.h"
 #include "Renderer.h"
 #include "ContentPackage.h"
-#include "Log.h"
 #include "SceneGraph.h"
 #include "Camera.h"
 #include "InputHandler.h"

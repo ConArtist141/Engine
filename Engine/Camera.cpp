@@ -10,9 +10,9 @@ using namespace DirectX;
 
 void SphericalCamera::GetForward(XMFLOAT3* vecOut)
 {
-	vecOut->x = cos(Yaw) * sin(Pitch);
-	vecOut->y = cos(Pitch);
-	vecOut->z = sin(Yaw)* sin(Pitch);
+	vecOut->x = static_cast<float>(cos(Yaw) * sin(Pitch));
+	vecOut->y = static_cast<float>(cos(Pitch));
+	vecOut->z = static_cast<float>(sin(Yaw)* sin(Pitch));
 }
 
 void SphericalCamera::GetPosition(DirectX::XMFLOAT3* positionOut)
@@ -23,7 +23,10 @@ void SphericalCamera::GetPosition(DirectX::XMFLOAT3* positionOut)
 void SphericalCamera::GetViewMatrix(XMFLOAT4X4* matrixOut)
 {
 	XMVECTOR eye = XMLoadFloat3(&Position);
-	XMVECTOR target = XMVectorSet(cos(Yaw) * sin(Pitch), cos(Pitch), sin(Yaw) * sin(Pitch), 0.0f);
+	XMVECTOR target = XMVectorSet(static_cast<float>(cos(Yaw) * sin(Pitch)), 
+		static_cast<float>(cos(Pitch)), 
+		static_cast<float>(sin(Yaw) * sin(Pitch)),
+		0.0f);
 	target += eye;
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -50,8 +53,8 @@ void SphericalCamera::LookAt(const XMFLOAT3& target)
 	XMFLOAT3 direction;
 	XMStoreFloat3(&direction, directionVec);
 	
-	Yaw = atan2(direction.z, direction.x);
-	Pitch = acos(direction.y);
+	Yaw = static_cast<float>(atan2(direction.z, direction.x));
+	Pitch = static_cast<float>(acos(direction.y));
 }
 
 void SphericalCamera::GetFrustum(Frustum* frustum, const Extent2D& viewportSize)

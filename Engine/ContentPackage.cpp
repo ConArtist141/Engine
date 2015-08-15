@@ -1,7 +1,6 @@
 #include "ContentPackage.h"
 
 #include "StaticMesh.h"
-#include "Log.h"
 #include "Renderer.h"
 #include "DDSTextureLoader.h"
 #include "Material.h"
@@ -56,31 +55,31 @@ void ContentPackage::SetVertexLayout(const int vertexAttribCount,
 		if (strcmp(desc->SemanticName, "POSITION") == 0)
 		{
 			if (desc->Format != DXGI_FORMAT_R32G32B32_FLOAT)
-				LOG("Warning: ContentPackage position format not DXGI_FORMAT_R32G32B32_FLOAT");
+				OutputDebugString("Warning: ContentPackage position format not DXGI_FORMAT_R32G32B32_FLOAT\n");
 			offsets.position = desc->AlignedByteOffset / sizeof(float);
 		}
 		else if (strcmp(desc->SemanticName, "TEXCOORD") == 0)
 		{
 			if (desc->Format != DXGI_FORMAT_R32G32_FLOAT)
-				LOG("Warning: ContentPackage tex coord format not DXGI_FORMAT_R32G32_FLOAT");
+				OutputDebugString("Warning: ContentPackage tex coord format not DXGI_FORMAT_R32G32_FLOAT\n");
 			offsets.texCoord = desc->AlignedByteOffset / sizeof(float);
 		}
 		else if (strcmp(desc->SemanticName, "NORMAL") == 0)
 		{
 			if (desc->Format != DXGI_FORMAT_R32G32B32_FLOAT)
-				LOG("Warning: ContentPackage normal format not DXGI_FORMAT_R32G32B32_FLOAT");
+				OutputDebugString("Warning: ContentPackage normal format not DXGI_FORMAT_R32G32B32_FLOAT\n");
 			offsets.normal = desc->AlignedByteOffset / sizeof(float);
 		}
 		else if (strcmp(desc->SemanticName, "TANGENT") == 0)
 		{
 			if (desc->Format != DXGI_FORMAT_R32G32B32_FLOAT)
-				LOG("Warning: ContentPackage tangent format not DXGI_FORMAT_R32G32B32_FLOAT");
+				OutputDebugString("Warning: ContentPackage tangent format not DXGI_FORMAT_R32G32B32_FLOAT\n");
 			offsets.tangent = desc->AlignedByteOffset / sizeof(float);
 		}
 		else if (strcmp(desc->SemanticName, "BITANGENT") == 0)
 		{
 			if (desc->Format != DXGI_FORMAT_R32G32B32_FLOAT)
-				LOG("Warning: ContentPackage bitangent format not DXGI_FORMAT_R32G32B32_FLOAT");
+				OutputDebugString("Warning: ContentPackage bitangent format not DXGI_FORMAT_R32G32B32_FLOAT\n");
 			offsets.bitangent = desc->AlignedByteOffset / sizeof(float);
 		}
 	}
@@ -88,13 +87,13 @@ void ContentPackage::SetVertexLayout(const int vertexAttribCount,
 
 bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** meshOut)
 {
-	PRINT("Loading resource ");
-	PRINT(contentLocation.c_str());
-	PRINT("...\n");
+	OutputDebugString("Loading resource ");
+	OutputDebugString(contentLocation.c_str());
+	OutputDebugString("...\n");
 
 	if (vertexStrideFloat == 0)
 	{
-		LOG("Vertex layout has not been set!\n");
+		OutputDebugString("Vertex layout has not been set!\n");
 		return false;
 	}
 
@@ -118,7 +117,7 @@ bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** m
 
 	if (!scene->HasMeshes())
 	{
-		LOG("Scene does not have meshes!");
+		OutputDebugString("Scene does not have meshes!\n");
 		return false;
 	}
 
@@ -128,26 +127,26 @@ bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** m
 		auto mesh = scene->mMeshes[i];
 		if (!mesh->HasPositions() && (offsets.position != VERTEX_ATTRIBUTE_DISABLED))
 		{
-			LOG("Mesh is missing positions!");
+			OutputDebugString("Mesh is missing positions!\n");
 			return false;
 		}
 
 		if (!mesh->HasTextureCoords(0) && (offsets.texCoord != VERTEX_ATTRIBUTE_DISABLED))
 		{
-			LOG("Mesh is missing texture coordinates at location 0!");
+			OutputDebugString("Mesh is missing texture coordinates at location 0!\n");
 			return false;
 		}
 
 		if (!mesh->HasNormals() && (offsets.normal != VERTEX_ATTRIBUTE_DISABLED))
 		{
-			LOG("Mesh is missing normals!");
+			OutputDebugString("Mesh is missing normals!\n");
 			return false;
 		}
 
 		if (!mesh->HasTangentsAndBitangents() && ((offsets.tangent != VERTEX_ATTRIBUTE_DISABLED) ||
 			(offsets.bitangent != VERTEX_ATTRIBUTE_DISABLED)))
 		{
-			LOG("Mesh is missing tangets or bitangents");
+			OutputDebugString("Mesh is missing tangets or bitangents!\n");
 			return false;
 		}
 
@@ -252,9 +251,9 @@ bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** m
 			auto mesh = scene->mMeshes[i];
 			for (size_t faceId = 0, indexId = indexOffset; faceId < mesh->mNumFaces; ++faceId)
 			{
-				meshIndices16[indexId++] = mesh->mFaces[faceId].mIndices[0] + meshOffset;
-				meshIndices16[indexId++] = mesh->mFaces[faceId].mIndices[1] + meshOffset;
-				meshIndices16[indexId++] = mesh->mFaces[faceId].mIndices[2] + meshOffset;
+				meshIndices16[indexId++] = mesh->mFaces[faceId].mIndices[0] + static_cast<uint16_t>(meshOffset);
+				meshIndices16[indexId++] = mesh->mFaces[faceId].mIndices[1] + static_cast<uint16_t>(meshOffset);
+				meshIndices16[indexId++] = mesh->mFaces[faceId].mIndices[2] + static_cast<uint16_t>(meshOffset);
 			}
 			indexOffset += mesh->mNumFaces * 3;
 			meshOffset += mesh->mNumVertices * vertexStrideFloat;
@@ -350,7 +349,7 @@ bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** m
 	strstream << "Computed Mesh Bounds : { (" << bounds.Lower.x << ", " << bounds.Lower.y << ", " <<
 		bounds.Lower.z << "), (" << bounds.Upper.x << ", " << bounds.Upper.y << ", " << bounds.Upper.z <<
 		") }\n";
-	PRINT(strstream.str().c_str());
+	OutputDebugString(strstream.str().c_str());
 
 	*meshOut = new StaticMesh(vertexBuffer, indexBuffer, indexCount, 0, bounds, indexFormat);
 	staticMeshes[contentLocation] = *meshOut;
@@ -360,9 +359,9 @@ bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** m
 bool ContentPackage::LoadTexture2D(const std::string& contentLocation, ID3D11Resource** textureResource,
 	ID3D11ShaderResourceView** resourceView)
 {
-	PRINT("Loading resource ");
-	PRINT(contentLocation.c_str());
-	PRINT("...\n");
+	OutputDebugString("Loading resource ");
+	OutputDebugString(contentLocation.c_str());
+	OutputDebugString("...\n");
 
 	auto findResult = textures.find(contentLocation);
 	if (findResult != textures.end())
@@ -405,9 +404,9 @@ bool ContentPackage::LoadVertexShader(const std::string& contentLocation, ID3D11
 bool ContentPackage::LoadVertexShader(const std::string& contentLocation, ID3D11VertexShader** shaderOut,
 	BytecodeBlob* bytecodeOut)
 {
-	PRINT("Loading resource ");
-	PRINT(contentLocation.c_str());
-	PRINT("...\n");
+	OutputDebugString("Loading resource ");
+	OutputDebugString(contentLocation.c_str());
+	OutputDebugString("...\n");
 
 	auto findResult = vertexShaders.find(contentLocation);
 	if (findResult != vertexShaders.end())
@@ -454,9 +453,9 @@ bool ContentPackage::LoadVertexShader(const std::string& contentLocation, ID3D11
 
 bool ContentPackage::LoadPixelShader(const std::string& contentLocation, ID3D11PixelShader** shaderOut)
 {
-	PRINT("Loading resource ");
-	PRINT(contentLocation.c_str());
-	PRINT("...\n");
+	OutputDebugString("Loading resource ");
+	OutputDebugString(contentLocation.c_str());
+	OutputDebugString("...\n");
 
 	auto findResult = pixelShaders.find(contentLocation);
 	if (findResult != pixelShaders.end())
@@ -496,7 +495,7 @@ void ContentPackage::SetMaterial(const std::string& contentName, Material* mater
 #ifdef _DEBUG
 	auto it = materials.find(contentName);
 	if (it != materials.end())
-		LOG("Warning: Conflicting material found!");
+		OutputDebugString("Warning: Conflicting material found!\n");
 #endif
 
 	materials[contentName] = material;
@@ -517,9 +516,9 @@ void ContentPackage::Destroy()
 		material.second->Destroy();
 		delete material.second;
 
-		PRINT("Destroying material ");
-		PRINT(material.first.c_str());
-		PRINT("....\n");
+		OutputDebugString("Destroying material ");
+		OutputDebugString(material.first.c_str());
+		OutputDebugString("....\n");
 	}
 
 	for (auto mesh : staticMeshes)
@@ -527,9 +526,9 @@ void ContentPackage::Destroy()
 		mesh.second->Destroy();
 		delete mesh.second;
 
-		PRINT("Destroying resource ");
-		PRINT(mesh.first.c_str());
-		PRINT("....\n");
+		OutputDebugString("Destroying resource ");
+		OutputDebugString(mesh.first.c_str());
+		OutputDebugString("....\n");
 	}
 
 	for (auto texture : textures)
@@ -537,26 +536,26 @@ void ContentPackage::Destroy()
 		texture.second.second->Release();
 		texture.second.first->Release();
 
-		PRINT("Destroying resource ");
-		PRINT(texture.first.c_str());
-		PRINT("....\n");
+		OutputDebugString("Destroying resource ");
+		OutputDebugString(texture.first.c_str());
+		OutputDebugString("....\n");
 	}
 
 	for (auto shader : pixelShaders)
 	{
 		shader.second->Release();
 
-		PRINT("Destroying resource ");
-		PRINT(shader.first.c_str());
-		PRINT("....\n");
+		OutputDebugString("Destroying resource ");
+		OutputDebugString(shader.first.c_str());
+		OutputDebugString("....\n");
 	}
 
 	for (auto shader : vertexShaders)
 	{
 		shader.second->Release();
 
-		PRINT("Destroying resource ");
-		PRINT(shader.first.c_str());
-		PRINT("....\n");
+		OutputDebugString("Destroying resource ");
+		OutputDebugString(shader.first.c_str());
+		OutputDebugString("....\n");
 	}
 }

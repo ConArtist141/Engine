@@ -1,7 +1,5 @@
 #include "SceneGraph.h"
 
-#include "Log.h"
-
 #include <stack>
 #include <limits>
 
@@ -86,7 +84,7 @@ void GetVolumeLeafBounds(SceneNode* node, Bounds* boundsOut)
 		*boundsOut = node->Region.AABB;
 	else
 	{
-		LOG("Invalid leaf type!");
+		OutputDebugString("Invalid leaf type!");
 		assert(1);
 	}
 }
@@ -285,7 +283,7 @@ void BuildBoundingVolumeHierarchy(SceneNode* zone, const bool bRebuildChildrenZo
 {
 	if (!zone->IsZone())
 	{
-		LOG("Scene node specified is not a zone!\n");
+		OutputDebugString("Scene node specified is not a zone!\n");
 		return;
 	}
 

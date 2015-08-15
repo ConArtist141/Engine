@@ -1,6 +1,5 @@
 #include "RenderWindow.h"
 #include "Renderer.h"
-#include "Log.h"
 #include "InputHandler.h"
 
 #include <windowsx.h>
@@ -217,7 +216,7 @@ bool InitializeWindow(HINSTANCE hInstance, const RenderParams& renderParams, HWN
 	DEVMODE dmScreenSettings;
 	int posX, posY;
 
-	LOG("Initializing Window...");
+	OutputDebugString("Initializing Window...\n");
 
 	// Setup the windows class with default settings.
 	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -233,7 +232,7 @@ bool InitializeWindow(HINSTANCE hInstance, const RenderParams& renderParams, HWN
 	wc.lpszClassName = WINDOW_CLASS_NAME;
 	wc.cbSize = sizeof(WNDCLASSEX);
 
-	LOG("Registering Window Class...");
+	OutputDebugString("Registering Window Class...\n");
 
 	// Register the window class.
 	RegisterClassEx(&wc);
@@ -277,7 +276,7 @@ bool InitializeWindow(HINSTANCE hInstance, const RenderParams& renderParams, HWN
 	else
 		windowStyle = WS_OVERLAPPEDWINDOW;
 
-	LOG("Creating Window...");
+	OutputDebugString("Creating Window...\n");
 
 	// Create the window with the screen settings and get the handle to it.
 	*hwndOut = CreateWindowEx(WS_EX_APPWINDOW, WINDOW_CLASS_NAME, APPLICATION_NAME,
@@ -310,11 +309,11 @@ void DisposeWindow(HINSTANCE hInstance, const RenderParams& renderParams, HWND h
 	if (!renderParams.Windowed)
 		ChangeDisplaySettings(nullptr, 0);
 
-	LOG("Disposing Window...");
+	OutputDebugString("Disposing Window...\n");
 
 	DestroyWindow(hWindow);
 
-	LOG("Unregistering Window Class...");
+	OutputDebugString("Unregistering Window Class...\n");
 
 	UnregisterClass(WINDOW_CLASS_NAME, hInstance);
 }

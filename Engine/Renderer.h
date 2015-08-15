@@ -90,14 +90,12 @@ protected:
 	virtual bool InitWindow(const HWND hWindow, const RenderParams& params);
 	virtual bool InitRenderTarget();
 	virtual bool InitRenderObjects();
-	virtual bool InitDeferredTargets();
 	virtual bool InitInternalShaders();
 	virtual bool InitInternalVertexBuffers();
 
-	virtual void DeferredPass(SceneNode* sceneRoot, ICamera* camera, const RenderPassType passType,
+	virtual void RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPassType passType,
 		D3D11_VIEWPORT& viewport, ID3D11RenderTargetView** renderTargets, const size_t renderTargetsCount,
 		ID3D11DepthStencilView* depthStencilView);
-	virtual void CompositePass(D3D11_VIEWPORT& viewport);
 
 	virtual void DestroyRenderTarget();
 	virtual void DestroyDeferredTargets();

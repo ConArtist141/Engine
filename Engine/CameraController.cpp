@@ -1,8 +1,6 @@
 #include "CameraController.h"
 #include "Camera.h"
 
-#include "Log.h"
-
 #include <DirectXMath.h>
 #include <algorithm>
 

@@ -1,5 +1,4 @@
 #include "Renderer.h"
-#include "Log.h"
 #include "Camera.h"
 #include "SceneGraph.h"
 #include "ContentPackage.h"
@@ -128,10 +127,6 @@ bool Renderer::Initialize(HWND hWindow, const RenderParams& params)
 	if (FAILED(result))
 		return false;
 
-	result = InitDeferredTargets();
-	if (FAILED(result))
-		return false;
-
 	internalContent = new ContentPackage(this);
 
 	result = InitInternalShaders();
@@ -174,7 +169,7 @@ bool Renderer::InitWindow(const HWND hWindow, const RenderParams& params)
 
 		if (desc->Width == params.Extent.Width && desc->Height == params.Extent.Height)
 		{
-			LOG("Found compatible display mode!");
+			OutputDebugString("Found compatible display mode!\n");
 			descMatch = desc;
 			break;
 		}
@@ -182,7 +177,7 @@ bool Renderer::InitWindow(const HWND hWindow, const RenderParams& params)
 
 	if (descMatch == nullptr)
 	{
-		LOG("No DXGI mode match found - using a default!");
+		OutputDebugString("No DXGI mode match found - using a default!\n");
 		descMatch = modeDescriptions;
 	}
 
@@ -215,7 +210,7 @@ bool Renderer::InitWindow(const HWND hWindow, const RenderParams& params)
 	if (!renderParameters.Windowed)
 		swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-	LOG("Creating device and swap chain...");
+	OutputDebugString("Creating device and swap chain...\n");
 
 	D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
 	result = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
@@ -224,25 +219,25 @@ bool Renderer::InitWindow(const HWND hWindow, const RenderParams& params)
 
 	if (FAILED(result))
 	{
-		LOG("Failed to create device and swap chain!");
+		OutputDebugString("Failed to create device and swap chain!\n");
 		return false;
 	}
 
-	LOG("Device and swap chain created successfully!");
+	OutputDebugString("Device and swap chain created successfully!\n");
 
 	return true;
 }
 
 bool Renderer::InitRenderTarget()
 {
-	LOG("Creating render target view for back buffer...");
+	OutputDebugString("Creating render target view for back buffer...\n");
 
 	ID3D11Texture2D* backBuffer;
 	HRESULT result = swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
 	result = device->CreateRenderTargetView(backBuffer, nullptr, &backBufferRenderTarget);
 	result = backBuffer->Release();
 
-	LOG("Creating depth texture...");
+	OutputDebugString("Creating depth texture...\n");
 
 	D3D11_TEXTURE2D_DESC depthTextureDesc;
 	ZeroMemory(&depthTextureDesc, sizeof(depthTextureDesc));
@@ -267,7 +262,7 @@ bool Renderer::InitRenderTarget()
 	if (FAILED(result))
 		return false;
 
-	LOG("Creating depth stencil view...");
+	OutputDebugString("Creating depth stencil view...\n");
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
 	ZeroMemory(&depthStencilViewDesc, sizeof(depthStencilViewDesc));
@@ -309,7 +304,7 @@ bool Renderer::CreateStaticMeshInputLayout(const std::string& vertexShaderFile)
 
 bool Renderer::CreateStaticMeshInputLayout(BytecodeBlob& vertexShaderBytecode)
 {
-	LOG("Creating static mesh input layout...");
+	OutputDebugString("Creating static mesh input layout...\n");
 
 	HRESULT result = device->CreateInputLayout(GetStaticMeshInputElementDesc(), 
 		STATIC_MESH_VERTEX_ATTRIBUTE_COUNT,
@@ -325,7 +320,7 @@ bool Renderer::CreateStaticMeshInputLayout(BytecodeBlob& vertexShaderBytecode)
 
 bool Renderer::InitRenderObjects()
 {
-	LOG("Creating depth stencil state...");
+	OutputDebugString("Creating depth stencil state...\n");
 
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
 	ZeroMemory(&depthStencilDesc, sizeof(depthStencilDesc));
@@ -361,7 +356,7 @@ bool Renderer::InitRenderObjects()
 	if (FAILED(result))
 		return false;
 
-	LOG("Creating raster state...");
+	OutputDebugString("Creating raster state...\n");
 
 	D3D11_RASTERIZER_DESC rasterDesc;
 	rasterDesc.AntialiasedLineEnable = false;
@@ -380,7 +375,7 @@ bool Renderer::InitRenderObjects()
 	if (FAILED(result))
 		return false;
 
-	LOG("Creating linear sampler state...");
+	OutputDebugString("Creating linear sampler state...\n");
 
 	D3D11_SAMPLER_DESC samplerDesc;
 	ZeroMemory(&samplerDesc, sizeof(samplerDesc));
@@ -406,79 +401,6 @@ bool Renderer::InitRenderObjects()
 
 	if (FAILED(result))
 		return false;
-
-	return true;
-}
-
-bool Renderer::InitDeferredTargets()
-{
-	LOG("Creating deferred buffers...");
-
-	D3D11_TEXTURE2D_DESC targetDesc;
-	ZeroMemory(&targetDesc, sizeof(targetDesc));
-	targetDesc.ArraySize = 1;
-	targetDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	targetDesc.CPUAccessFlags = 0;
-	targetDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	targetDesc.Width = renderParameters.Extent.Width;
-	targetDesc.Height = renderParameters.Extent.Height;
-	targetDesc.MipLevels = 1;
-	targetDesc.MiscFlags = 0;
-	targetDesc.SampleDesc.Count = 1;
-	targetDesc.SampleDesc.Quality = 0;
-	targetDesc.Usage = D3D11_USAGE_DEFAULT;
-
-	ID3D11Texture2D* albedoBuffer;
-	HRESULT hr = device->CreateTexture2D(&targetDesc, nullptr, &albedoBuffer);
-
-	if (FAILED(hr))
-		return false;
-
-	deferredBuffers.push_back(albedoBuffer);
-
-	ID3D11RenderTargetView* albedoRenderTarget;
-	hr = device->CreateRenderTargetView(albedoBuffer, nullptr, &albedoRenderTarget);
-
-	if (FAILED(hr))
-		return false;
-
-	deferredRenderTargets.push_back(albedoRenderTarget);
-
-	ID3D11ShaderResourceView* albedoResourceView;
-	hr = device->CreateShaderResourceView(albedoBuffer, nullptr, &albedoResourceView);
-
-	if (FAILED(hr))
-		return false;
-
-	deferredShaderResourceViews.push_back(albedoResourceView);
-	deferredShaderResourceClear.push_back(nullptr);
-	
-	targetDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-	ID3D11Texture2D* normalBuffer;
-	hr = device->CreateTexture2D(&targetDesc, nullptr, &normalBuffer);
-
-	if (FAILED(hr))
-		return false;
-
-	deferredBuffers.push_back(normalBuffer);
-
-	ID3D11RenderTargetView* normalRenderTargetView;
-	hr = device->CreateRenderTargetView(normalBuffer, nullptr, &normalRenderTargetView);
-
-	if (FAILED(hr))
-		return false;
-
-	deferredRenderTargets.push_back(normalRenderTargetView);
-
-	ID3D11ShaderResourceView* normalResourceView;
-	hr = device->CreateShaderResourceView(normalBuffer, nullptr, &normalResourceView);
-
-	if (FAILED(hr))
-		return false;
-
-	deferredShaderResourceViews.push_back(normalResourceView);
-	deferredShaderResourceClear.push_back(nullptr);
 
 	return true;
 }
@@ -594,8 +516,7 @@ bool Renderer::Reset(const RenderParams& params)
 
 		if (!InitRenderTarget())
 			return false;
-		if (!InitDeferredTargets())
-			return false;
+
 		return true;
 	}
 	else
@@ -627,14 +548,14 @@ void Renderer::CollectVisibleStaticMeshes(SceneNode* node, const Frustum& camera
 {
 	if (!node->IsZone())
 	{
-		LOG("Attempted static mesh collection on non-zone node!");
+		OutputDebugString("Attempted static mesh collection on non-zone node!\n");
 		return;
 	}
 
 	CollectVisibleStaticMeshes(&node->Region, cameraFrustum, meshes);
 }
 
-void Renderer::DeferredPass(SceneNode* sceneRoot, ICamera* camera, const RenderPassType passType,
+void Renderer::RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPassType passType,
 	D3D11_VIEWPORT& viewport, ID3D11RenderTargetView** renderTargets, const size_t renderTargetsCount,
 	ID3D11DepthStencilView* depthStencilView)
 {
@@ -673,7 +594,7 @@ void Renderer::DeferredPass(SceneNode* sceneRoot, ICamera* camera, const RenderP
 
 	HRESULT result = device->CreateBuffer(&transformBufferDesc, &transformData, &transformBuffer);
 	if (FAILED(result))
-		LOG("Failed to create transform buffer!");
+		OutputDebugString("Failed to create transform buffer!\n");
 
 	// Set primitive topology and input layout for static meshes
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -778,7 +699,7 @@ void Renderer::DeferredPass(SceneNode* sceneRoot, ICamera* camera, const RenderP
 
 			result = device->CreateBuffer(&bufferDesc, &subData, &instanceBuffer);
 			if (FAILED(result))
-				LOG("Failed to create instance buffer!");
+				OutputDebugString("Failed to create instance buffer!\n");
 
 			// Bind the created buffer
 			UINT instanceStride = sizeof(XMFLOAT4X4);
@@ -795,33 +716,6 @@ void Renderer::DeferredPass(SceneNode* sceneRoot, ICamera* camera, const RenderP
 	transformBuffer->Release();
 }
 
-void Renderer::CompositePass(D3D11_VIEWPORT& viewport)
-{
-	// Set render state
-	deviceContext->RSSetViewports(1, &viewport);
-	deviceContext->OMSetRenderTargets(1, &backBufferRenderTarget, nullptr);
-	deviceContext->OMSetDepthStencilState(blitDepthStencilState, 0);
-	deviceContext->RSSetState(forwardPassRasterState);
-
-	deviceContext->VSSetShader(blitVertexShader, nullptr, 0);
-	deviceContext->PSSetShader(blitPixelShader, nullptr, 0);
-	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	deviceContext->IASetInputLayout(blitInputLayout);
-
-	deviceContext->PSSetSamplers(0, 1, &blitSamplerState);
-	deviceContext->PSSetShaderResources(0, deferredShaderResourceViews.size(),
-		deferredShaderResourceViews.data());
-
-	UINT stride = BLIT_STRIDE;
-	UINT offset = 0;
-	deviceContext->IASetVertexBuffers(0, 1, &blitVertexBuffer, &stride, &offset);
-
-	deviceContext->Draw(BLIT_VERTEX_COUNT, 0);
-
-	deviceContext->PSSetShaderResources(0, deferredShaderResourceClear.size(),
-		deferredShaderResourceClear.data());
-}
-
 void Renderer::RenderFrame(SceneNode* sceneRoot, ICamera* camera)
 {
 	++frameCount;
@@ -830,7 +724,7 @@ void Renderer::RenderFrame(SceneNode* sceneRoot, ICamera* camera)
 	// Clear depth and color attachments
 	if (camera == nullptr)
 	{
-		LOG("Warning - Camera was set to nullptr!");
+		OutputDebugString("Warning - Camera was set to nullptr!\n");
 		return;
 	}
 
@@ -845,12 +739,11 @@ void Renderer::RenderFrame(SceneNode* sceneRoot, ICamera* camera)
 		viewport.TopLeftX = 0.0f;
 		viewport.TopLeftY = 0.0f;
 
-		deviceContext->ClearRenderTargetView(deferredRenderTargets[RENDER_TARGET_INDEX_ALBEDO], clearColor);
+		deviceContext->ClearRenderTargetView(backBufferRenderTarget, clearColor);
 		deviceContext->ClearDepthStencilView(defaultDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-		DeferredPass(sceneRoot, camera, RENDER_PASS_TYPE_DEFERRED, viewport,
-			deferredRenderTargets.data(), deferredRenderTargets.size(), defaultDepthStencilView);
-		CompositePass(viewport);
+		RenderPass(sceneRoot, camera, RENDER_PASS_TYPE_DEFERRED, viewport,
+			&backBufferRenderTarget, 1, defaultDepthStencilView);
 	}
 
 	if (renderParameters.UseVSync)
@@ -866,7 +759,7 @@ void Renderer::OnResize()
 
 void Renderer::Destroy()
 {
-	LOG("Disposing renderer objects...");
+	OutputDebugString("Disposing renderer objects...\n");
 
 	bDisposed = true;
 
