@@ -629,7 +629,7 @@ void Renderer::RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPas
 
 	auto compareMeshes = [](SceneNode* n1, SceneNode* n2)
 	{
-		return n1->Mesh.Static < n2->Mesh.Static;
+		return n1->Ref.StaticMesh < n2->Ref.StaticMesh;
 	};
 
 	// Reorder the visible meshes for batching
@@ -665,7 +665,7 @@ void Renderer::RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPas
 		while (it != endMaterialIt)
 		{
 			// Begin mesh for this batch
-			auto currentMesh = (*it)->Mesh.Static;
+			auto currentMesh = (*it)->Ref.StaticMesh;
 			auto endMeshIt = upper_bound(it, endMaterialIt, *it, compareMeshes);
 			auto vertexBuffer = currentMesh->GetVertexBuffer();
 			auto indexBuffer = currentMesh->GetIndexBuffer();

@@ -62,7 +62,7 @@ void CollectZoneVolumeHierachyLeaves(SceneNode* node, vector<SceneNode*>& leaves
 {
 	for (auto child : node->Children)
 	{
-		// Collect static meshes and zones
+		// Collect static meshes and zones.
 		if (child->IsMesh())
 			leaves.push_back(child);
 		else if (child->IsZone())
@@ -76,7 +76,7 @@ void GetVolumeLeafBounds(SceneNode* node, Bounds* boundsOut)
 {
 	if (node->IsStaticMesh())
 	{
-		node->Mesh.Static->GetMeshBounds(boundsOut);
+		node->Ref.StaticMesh->GetMeshBounds(boundsOut);
 		XMMATRIX matrix = XMLoadFloat4x4(&node->Transform.Global);
 		TransformBounds(matrix, *boundsOut, boundsOut);
 	}
@@ -84,7 +84,7 @@ void GetVolumeLeafBounds(SceneNode* node, Bounds* boundsOut)
 		*boundsOut = node->Region.AABB;
 	else
 	{
-		OutputDebugString("Invalid leaf type!");
+		OutputDebugString("Invalid leaf type!\n");
 		assert(1);
 	}
 }
@@ -316,15 +316,16 @@ SceneNode* CreateSceneGraph()
 {
 	auto infinity = numeric_limits<float>::infinity();
 	auto node = new SceneNode;
-	node->Region.AABB = 
-	{ 
-		{ -infinity, -infinity, -infinity }, 
-		{ infinity, infinity, infinity } 
+	node->Region.AABB =
+	{
+		{ -infinity, -infinity, -infinity },
+		{ infinity, infinity, infinity }
 	};
 	node->Region.LeafData = nullptr;
 	node->Region.Node1 = nullptr;
 	node->Region.Node2 = nullptr;
 	node->Region.Node3 = nullptr;
+	node->Ref.ZoneData = nullptr;
 	node->Type = NODE_TYPE_ZONE;
 
 	auto identity = XMMatrixIdentity();
@@ -348,9 +349,20 @@ SceneNode* CreateStaticMeshNode(StaticMesh* mesh, Material* material, const XMFL
 {
 	auto node = new SceneNode;
 	node->Material = material;
-	node->Mesh.Static = mesh;
+	node->Ref.StaticMesh = mesh;
 	node->Transform.Local = transform;
 	node->Type = NODE_TYPE_STATIC_MESH;
+
+	return node;
+}
+
+SceneNode* CreateLightNode(LightType type, LightData* data)
+{
+	auto node = new SceneNode;
+	node->Material = nullptr;
+	node->Ref.LightData = data;
+	XMStoreFloat4x4(&node->Transform.Local, XMMatrixIdentity());
+	node->Type = NODE_TYPE_LIGHT;
 
 	return node;
 }

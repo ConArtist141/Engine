@@ -7,17 +7,14 @@
 #include "StaticMesh.h"
 #include "Material.h"
 
-struct NodeTransform
-{
-	DirectX::XMFLOAT4X4 Local;
-	DirectX::XMFLOAT4X4 Global;
-};
+class SceneNode;
 
 enum NodeType
 {
 	NODE_TYPE_EMPTY = 0,
 	NODE_TYPE_ZONE = 1,
 	NODE_TYPE_STATIC_MESH = 2,
+	NODE_TYPE_LIGHT = 3
 };
 
 enum NodeTypeRange
@@ -26,7 +23,11 @@ enum NodeTypeRange
 	NODE_TYPE_RANGE_MESH_END = NODE_TYPE_STATIC_MESH
 };
 
-class SceneNode;
+struct NodeTransform
+{
+	DirectX::XMFLOAT4X4 Local;
+	DirectX::XMFLOAT4X4 Global;
+};
 
 struct RegionNode
 {
@@ -37,9 +38,31 @@ struct RegionNode
 	SceneNode* LeafData;
 };
 
-union MeshRef
+enum LightType
 {
-	StaticMesh* Static;
+	LIGHT_TYPE_DIRECTIONAL,
+	LIGHT_TYPE_OMNI
+};
+
+struct LightData
+{
+	LightType Type;
+	DirectX::XMFLOAT3 Position;
+	DirectX::XMFLOAT3 Direction;
+	float Radius;
+};
+
+struct ZoneData
+{
+	std::string Name;
+	SceneNode* ZoneDirectionalLight;
+};
+
+union NodeRef
+{
+	StaticMesh* StaticMesh;
+	LightData* LightData;
+	ZoneData* ZoneData;
 };
 
 // A node in a scene graph. Note that the root of a scene must be a zone.
@@ -51,24 +74,29 @@ public:
 	NodeTransform Transform;
 	Material* Material;
 	NodeType Type;
-	MeshRef Mesh;
+	NodeRef Ref;
 
 	inline bool IsZone() const;
 	inline bool IsMesh() const;
 	inline bool IsStaticMesh() const;
+	inline bool IsLight() const;
 };
 
-bool SceneNode::IsZone() const
+inline bool SceneNode::IsZone() const
 {
 	return Type == NODE_TYPE_ZONE;
 }
-bool SceneNode::IsMesh() const			
+inline bool SceneNode::IsMesh() const			
 {
 	return Type >= NODE_TYPE_RANGE_MESH_BEGIN && Type <= NODE_TYPE_RANGE_MESH_END;
 }
-bool SceneNode::IsStaticMesh() const
+inline bool SceneNode::IsStaticMesh() const
 {
 	return Type == NODE_TYPE_STATIC_MESH;
+}
+inline bool SceneNode::IsLight() const
+{
+	return Type == NODE_TYPE_LIGHT;
 }
 
 void TransformBounds(const DirectX::XMMATRIX& matrix, const Bounds& bounds, Bounds* boundsOut);
@@ -83,5 +111,6 @@ void BuildBoundingVolumeHierarchy(SceneNode* zone, const bool bRebuildChildrenZo
 SceneNode* CreateSceneGraph();
 void DestroySceneGraph(SceneNode* sceneNode);
 SceneNode* CreateStaticMeshNode(StaticMesh* mesh, Material* material, const DirectX::XMFLOAT4X4& transform);
+SceneNode* CreateLightNode(LightType type, LightData* data);
 
 #endif
