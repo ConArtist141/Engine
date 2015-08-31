@@ -33,12 +33,10 @@ device(renderer->GetDevice())
 {
 }
 
-void ContentPackage::SetVertexLayout(const int vertexAttribCount,
-	const D3D11_INPUT_ELEMENT_DESC vertexAttribs[],
-	const size_t stride)
+void ContentPackage::SetVertexLayout(const InputElementLayout* layout)
 {
-	vertexStrideByte = stride;
-	vertexStrideFloat = stride / sizeof(float);
+	vertexStrideByte = layout->Stride;
+	vertexStrideFloat = layout->Stride / sizeof(float);
 
 	offsets.position = VERTEX_ATTRIBUTE_DISABLED;
 	offsets.texCoord = VERTEX_ATTRIBUTE_DISABLED;
@@ -46,9 +44,9 @@ void ContentPackage::SetVertexLayout(const int vertexAttribCount,
 	offsets.tangent = VERTEX_ATTRIBUTE_DISABLED;
 	offsets.bitangent = VERTEX_ATTRIBUTE_DISABLED;
 
-	for (int attribId = 0; attribId < vertexAttribCount; ++attribId)
+	for (size_t attribId = 0; attribId < layout->AttributeCount; ++attribId)
 	{
-		const D3D11_INPUT_ELEMENT_DESC* desc = &vertexAttribs[attribId];
+		const D3D11_INPUT_ELEMENT_DESC* desc = &layout->Desc[attribId];
 		if (desc->InputSlot != 0)
 			continue;
 

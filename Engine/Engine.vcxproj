@@ -79,6 +79,7 @@
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="ContentPackage.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="InputElementDesc.h" />
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Geometry.h" />
@@ -86,6 +87,7 @@
     <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="StaticMesh.h" />
+    <ClInclude Include="Terrain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
@@ -93,11 +95,13 @@
     <ClCompile Include="ContentPackage.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="InputElementDesc.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderWindow.cpp" />
     <ClCompile Include="SceneGraph.cpp" />
     <ClCompile Include="StaticMesh.cpp" />
+    <ClCompile Include="Terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

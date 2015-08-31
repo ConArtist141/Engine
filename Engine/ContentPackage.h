@@ -4,6 +4,8 @@
 #include <map>
 #include <d3d11.h>
 
+#include "InputElementDesc.h"
+
 class StaticMesh;
 class Renderer;
 class Material;
@@ -44,9 +46,7 @@ public:
 	ContentPackage(ID3D11Device* device);
 	ContentPackage(Renderer* renderer);
 
-	void SetVertexLayout(const int vertexAttribCount, 
-		const D3D11_INPUT_ELEMENT_DESC vertexAttribs[],
-		const size_t byteStride);
+	void SetVertexLayout(const InputElementLayout* layout);
 
 	bool LoadMesh(const std::string& contentLocation, StaticMesh** meshOut);
 	bool LoadTexture2D(const std::string& contentLocation, ID3D11Resource** texture,

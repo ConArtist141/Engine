@@ -12,26 +12,6 @@ using namespace DirectX;
 
 #define SAFE_RELEASE(x) if (x != nullptr) x->Release();
 
-const D3D11_INPUT_ELEMENT_DESC StaticMeshInputElementDesc[STATIC_MESH_VERTEX_ATTRIBUTE_COUNT] =
-{
-	// Data from the vertex buffer
-	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-
-	// Data from the instance buffer
-	{ "INSTANCE", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-	{ "INSTANCE", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, sizeof(float) * 4, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-	{ "INSTANCE", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, sizeof(float) * 8, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-	{ "INSTANCE", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, sizeof(float) * 12, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
-};
-
-const D3D11_INPUT_ELEMENT_DESC BlitInputElementDesc[BLIT_ATTRIBUTE_COUNT] = 
-{
-	{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 2, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-};
-
 template <typename CacheData>
 inline size_t ResizingCache<CacheData>::GetSize() const				{ return cacheSize; }
 template <typename CacheData>
@@ -100,16 +80,10 @@ internalContent(nullptr),
 frameCount(0),
 instanceCache(DEFAULT_INSTANCE_CACHE_SIZE)
 {
-}
-
-const D3D11_INPUT_ELEMENT_DESC* Renderer::GetStaticMeshInputElementDesc() const
-{
-	return StaticMeshInputElementDesc;
-}
-
-const D3D11_INPUT_ELEMENT_DESC* Renderer::GetBlitInputElementDesc() const
-{
-	return BlitInputElementDesc;
+	GetInputElementLayoutStaticMesh(&elementLayoutStaticMesh);
+	GetInputElementLayoutStaticMeshInstanced(&elementLayoutStaticMeshInstanced);
+	GetInputElementLayoutBlit(&elementLayoutBlit);
+	GetInputElementLayoutTerrainPatch(&elementLayoutTerrainPatch);
 }
 
 bool Renderer::Initialize(HWND hWindow, const RenderParams& params)
@@ -306,8 +280,8 @@ bool Renderer::CreateStaticMeshInputLayout(BytecodeBlob& vertexShaderBytecode)
 {
 	OutputDebugString("Creating static mesh input layout...\n");
 
-	HRESULT result = device->CreateInputLayout(GetStaticMeshInputElementDesc(), 
-		STATIC_MESH_VERTEX_ATTRIBUTE_COUNT,
+	HRESULT result = device->CreateInputLayout(elementLayoutStaticMeshInstanced.Desc, 
+		elementLayoutStaticMeshInstanced.AttributeCount,
 		vertexShaderBytecode.Bytecode, 
 		vertexShaderBytecode.BytecodeLength, 
 		&staticMeshInputLayout);
@@ -419,7 +393,7 @@ bool Renderer::InitInternalShaders()
 	if (!result)
 		return false;
 
-	HRESULT hr = device->CreateInputLayout(GetBlitInputElementDesc(), BLIT_ATTRIBUTE_COUNT,
+	HRESULT hr = device->CreateInputLayout(elementLayoutBlit.Desc, elementLayoutBlit.AttributeCount,
 		vertexShaderBytecode.Bytecode, vertexShaderBytecode.BytecodeLength,
 		&blitInputLayout);
 	vertexShaderBytecode.Destroy();
@@ -669,7 +643,7 @@ void Renderer::RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPas
 			auto endMeshIt = upper_bound(it, endMaterialIt, *it, compareMeshes);
 			auto vertexBuffer = currentMesh->GetVertexBuffer();
 			auto indexBuffer = currentMesh->GetIndexBuffer();
-			UINT stride = STATIC_MESH_STRIDE;
+			UINT stride = elementLayoutStaticMeshInstanced.Stride;
 			UINT offset = 0;
 
 			// Bind mesh vertex and index buffers

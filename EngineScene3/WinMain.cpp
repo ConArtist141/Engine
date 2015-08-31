@@ -89,9 +89,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			BytecodeBlob vertexShaderBytecode;
 
 			// Load resources
-			package.SetVertexLayout(STATIC_MESH_VERTEX_ATTRIBUTE_COUNT, 
-				renderer.GetStaticMeshInputElementDesc(), 
-				STATIC_MESH_STRIDE);
+			package.SetVertexLayout(renderer.GetElementLayoutStaticMeshInstanced());
 			package.LoadMesh("ball.DAE", &mesh1);
 			package.LoadMesh("stage.DAE", &mesh2);
 			package.LoadVertexShader("StandardVertex.cso", &vertexShader, &vertexShaderBytecode);

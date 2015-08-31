@@ -8,11 +8,8 @@
 
 #include "RenderWindow.h"
 #include "Geometry.h"
+#include "InputElementDesc.h"
 
-#define STATIC_MESH_VERTEX_ATTRIBUTE_COUNT 7
-#define BLIT_ATTRIBUTE_COUNT 2
-#define STATIC_MESH_STRIDE 8 * sizeof(float)
-#define BLIT_STRIDE 4 * sizeof(float)
 #define BLIT_VERTEX_COUNT 4
 #define DEFAULT_INSTANCE_CACHE_SIZE 256
 
@@ -75,9 +72,11 @@ public:
 	inline bool IsWindowed() const;
 	inline bool MoveSizeEntered() const;
 	inline ID3D11Device* GetDevice() const;
-	
-	const D3D11_INPUT_ELEMENT_DESC* GetStaticMeshInputElementDesc() const;
-	const D3D11_INPUT_ELEMENT_DESC* GetBlitInputElementDesc() const;
+
+	inline const InputElementLayout* GetElementLayoutStaticMesh() const;
+	inline const InputElementLayout* GetElementLayoutStaticMeshInstanced() const;
+	inline const InputElementLayout* GetElementLayoutBlit() const;
+	inline const InputElementLayout* GetElementLayoutTerrainPatch() const;
 
 	Renderer();
 
@@ -131,6 +130,11 @@ private:
 	ID3D11SamplerState* linearSamplerState;
 	ID3D11SamplerState* blitSamplerState;
 
+	InputElementLayout elementLayoutStaticMesh;
+	InputElementLayout elementLayoutStaticMeshInstanced;
+	InputElementLayout elementLayoutBlit;
+	InputElementLayout elementLayoutTerrainPatch;
+
 	ContentPackage* internalContent;
 };
 
@@ -143,5 +147,25 @@ inline bool Renderer::IsWindowed() const					{ return renderParameters.Windowed;
 inline bool Renderer::MoveSizeEntered() const				{ return bMoveSizeEntered; }
 inline void Renderer::SetMoveSizeEntered(const bool value)	{ bMoveSizeEntered = value; }
 inline ID3D11Device* Renderer::GetDevice() const			{ return device; }
+
+inline const InputElementLayout * Renderer::GetElementLayoutStaticMesh() const
+{
+	return &elementLayoutStaticMesh;
+}
+
+inline const InputElementLayout * Renderer::GetElementLayoutStaticMeshInstanced() const
+{
+	return &elementLayoutStaticMeshInstanced;
+}
+
+inline const InputElementLayout * Renderer::GetElementLayoutBlit() const
+{
+	return &elementLayoutBlit;
+}
+
+inline const InputElementLayout * Renderer::GetElementLayoutTerrainPatch() const
+{
+	return &elementLayoutTerrainPatch;
+}
 
 #endif
