@@ -284,7 +284,7 @@ bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** m
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
 	bufferDesc.StructureByteStride = 0;
-	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 
 	D3D11_SUBRESOURCE_DATA bufferData;
 	ZeroMemory(&bufferData, sizeof(bufferData));

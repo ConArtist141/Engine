@@ -85,6 +85,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			ID3D11Resource* texture2 = nullptr;
 			ID3D11ShaderResourceView* resourceView2 = nullptr;
 
+			// Create terrain patch
+			size_t terrainPatchSize = 64;
+			float height = 30.0f;
+			float dropoff = 15.0f;
+
+			TerrainPatch terrainPatch(terrainPatchSize, terrainPatchSize, XMFLOAT3(1.0f, 1.0f, 1.0f));
+			for (size_t y = 0; y < terrainPatchSize; ++y)
+				for (size_t x = 0; x < terrainPatchSize; ++x)
+				{
+					float fy = static_cast<float>(y) - static_cast<float>(terrainPatchSize / 2);
+					float fx = static_cast<float>(x) - static_cast<float>(terrainPatchSize / 2);
+					terrainPatch(x, y) = height * exp(-(fx * fx + fy * fy) / (2 * dropoff * dropoff));
+				}
+			terrainPatch.MipLevels[0].ComputeHeightBounds();
+			terrainPatch.MeshOffset = XMFLOAT3(-static_cast<float>(terrainPatchSize) / 2, -4.0f, -20.0f - static_cast<float>(terrainPatchSize));
+			terrainPatch.GenerateMesh(0, renderer.GetDevice());
+
 			// Load resources
 			package.SetVertexLayout(renderer.GetElementLayoutStaticMeshInstanced());
 			package.LoadMesh("ball.DAE", &mesh1);
@@ -114,6 +131,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 		
 			XMStoreFloat4x4(&transform, XMMatrixIdentity());
 			scene->Children.push_back(CreateStaticMeshNode(mesh2, material2, transform));
+			scene->Children.push_back(CreateTerrainPatchNode(&terrainPatch, transform));
 
 			// Update the transforms of the scene
 			UpdateTransforms(scene, XMMatrixIdentity());
@@ -146,6 +164,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 
 			if (scene != nullptr)
 				DestroySceneGraph(scene);
+
+			terrainPatch.DestroyMesh();
 		}
 
 		params = renderer.GetRenderParams();

@@ -2,6 +2,7 @@
 #define TERRAIN_H_
 
 #include <memory>
+#include <vector>
 #include <d3d11.h>
 #include <DirectXMath.h>
 
@@ -31,13 +32,15 @@ public:
 
 	void ComputeHeightBounds();
 
-	inline float operator()(const int x, const int y) const;
+	inline float& operator()(const int x, const int y) const;
+	inline HeightField();
+	inline HeightField(const size_t extentX, const size_t extentY);
 };
 
 class TerrainPatch
 {
 public:
-	std::unique_ptr<HeightField[]> MipLevels;
+	std::vector<HeightField> MipLevels;
 	size_t MipCount;
 
 	struct
@@ -60,6 +63,12 @@ public:
 	inline size_t GetPatchExtentX() const;
 	inline size_t GetPatchExtentY() const;
 	inline void GetBounds(Bounds* boundsOut) const;
+
+	inline float& operator()(const int x, const int y) const;
+	inline float& operator()(const int x, const int y, const size_t mipLevel) const;
+
+	inline TerrainPatch(const size_t extentX, const size_t extentY, const DirectX::XMFLOAT3 cellSize);
+	TerrainPatch(const size_t extentX, const size_t extentY, const DirectX::XMFLOAT3 cellSize, const size_t mipLevelCount);
 };
 
 inline size_t TerrainPatch::GetPatchExtentX() const
@@ -82,9 +91,37 @@ inline void TerrainPatch::GetBounds(Bounds* boundsOut) const
 	boundsOut->Upper.z += CellSize.z * static_cast<float>(MipLevels[0].ExtentY);
 }
 
-inline float HeightField::operator()(const int x, const int y) const
+inline float& TerrainPatch::operator()(const int x, const int y) const
+{
+	return MipLevels[0].operator()(x, y);
+}
+
+inline float& TerrainPatch::operator()(const int x, const int y, const size_t mipLevel) const
+{
+	return MipLevels[mipLevel].operator()(x, y);
+}
+
+inline TerrainPatch::TerrainPatch(const size_t extentX, const size_t extentY, const DirectX::XMFLOAT3 cellSize) :
+	CellSize(cellSize), MipCount(1), CurrentMip(0)
+{
+	MipLevels.push_back(HeightField(extentX, extentY));
+	ZeroMemory(&MeshData, sizeof(MeshData));
+	ZeroMemory(&MeshOffset, sizeof(MeshOffset));
+}
+
+inline float& HeightField::operator()(const int x, const int y) const
 {
 	return Heights[y * ExtentX + x];
+}
+
+inline HeightField::HeightField() :
+	ExtentX(0), ExtentY(0), Heights(nullptr)
+{
+}
+
+inline HeightField::HeightField(const size_t extentX, const size_t extentY) :
+	ExtentX(extentX), ExtentY(extentY), Heights(new float[extentX * extentY])
+{
 }
 
 #endif

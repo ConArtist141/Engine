@@ -112,8 +112,6 @@ void CollectZoneVolumeHierachyLeaves(SceneNode* node, vector<SceneNode*>& leaves
 			leaves.push_back(child);
 		else if (child->IsZone())
 			leaves.push_back(child);
-		else
-			CollectZoneVolumeHierachyLeaves(child, leaves);
 	}
 }
 
@@ -401,12 +399,12 @@ SceneNode* CreateLightNode(LightType type, LightData* data)
 	return node;
 }
 
-SceneNode * CreateTerrainPatchNode(TerrainPatch* terrainPatch)
+SceneNode* CreateTerrainPatchNode(TerrainPatch* terrainPatch, const XMFLOAT4X4& transform)
 {
 	auto node = new SceneNode;
 	node->MaterialData = nullptr;
 	node->Ref.TerrainPatch = terrainPatch;
-	XMStoreFloat4x4(&node->Transform.Local, XMMatrixIdentity());
+	node->Transform.Local = transform;
 	node->Type = NODE_TYPE_TERRAIN_PATCH;
 
 	return node;

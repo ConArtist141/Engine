@@ -88,6 +88,12 @@ public:
 
 	Renderer();
 
+	struct
+	{
+		bool bLoadBlitShaders;
+		bool bLoadTerrainPatchShaders;
+	} InitParameters;
+
 protected:
 	void CollectVisibleNodes(RegionNode* node, const Frustum& cameraFrustum, NodeCollection& nodes);
 	void CollectVisibleNodes(SceneNode* node, const Frustum& cameraFrustum, NodeCollection& nodes);
@@ -96,6 +102,7 @@ protected:
 	virtual bool InitRenderTarget();
 	virtual bool InitRenderObjects();
 	virtual bool InitInternalShaders();
+	virtual bool InitConstantBuffers();
 	virtual bool InitInternalVertexBuffers();
 
 	virtual void RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPassType passType,
@@ -125,7 +132,10 @@ private:
 	std::vector<ID3D11ShaderResourceView*> deferredShaderResourceClear;
 	std::vector<ID3D11RenderTargetView*> deferredRenderTargets;
 
-	ID3D11Buffer* vertexBufferBlit;
+	ID3D11Buffer* bufferBlitVertices;
+
+	ID3D11Buffer* bufferCameraConstants;
+	ID3D11Buffer* bufferTerrainPatchInstanceConstants;
 
 	ID3D11VertexShader* vertexShaderBlit;
 	ID3D11VertexShader* vertexShaderStaticMeshInstanced;
@@ -139,6 +149,7 @@ private:
 	ID3D11DepthStencilState* forwardPassDepthStencilState;
 	ID3D11DepthStencilState* blitDepthStencilState;
 	ID3D11RasterizerState* forwardPassRasterState;
+	ID3D11RasterizerState* wireframeRasterState;
 	ID3D11SamplerState* linearSamplerState;
 	ID3D11SamplerState* blitSamplerState;
 

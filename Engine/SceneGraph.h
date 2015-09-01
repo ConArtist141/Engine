@@ -137,6 +137,6 @@ SceneNode* CreateSceneGraph();
 void DestroySceneGraph(SceneNode* sceneNode);
 SceneNode* CreateStaticMeshNode(StaticMesh* mesh, MaterialData* material, const DirectX::XMFLOAT4X4& transform);
 SceneNode* CreateLightNode(LightType type, LightData* data);
-SceneNode* CreateTerrainPatchNode(TerrainPatch* terrainPatch);
+SceneNode* CreateTerrainPatchNode(TerrainPatch* terrainPatch, const DirectX::XMFLOAT4X4& transform);
 
 #endif

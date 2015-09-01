@@ -1,11 +1,15 @@
 #include "ShaderHeader.hlsli"
 
-cbuffer Constants : register(b0)
+cbuffer CameraConstants : register(b0)
 {
-	matrix World;
 	matrix View;
 	matrix Projection;
 };
+
+cbuffer InstanceConstants : register(b1)
+{
+	matrix World;
+}
 
 VSOutputStandard main(VSInputTerrainPatch input)
 {

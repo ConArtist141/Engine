@@ -10,20 +10,29 @@
 using namespace std;
 using namespace DirectX;
 
+#define CAMERA_CONSTANT_BUFFER_SIZE sizeof(XMMATRIX) * 2
+#define TERRAIN_PATCH_INSTANCE_CONSTANT_BUFFER_SIZE sizeof(XMMATRIX)
+
 #define SAFE_RELEASE(x) if (x != nullptr) x->Release();
 
 template <typename CacheData>
-inline size_t ResizingCache<CacheData>::GetSize() const				
-{ return cacheSize; }
+inline size_t ResizingCache<CacheData>::GetSize() const
+{
+	return cacheSize;
+}
 template <typename CacheData>
-inline size_t ResizingCache<CacheData>::GetReservedSize() const		
-{ return cacheReserved; }
+inline size_t ResizingCache<CacheData>::GetReservedSize() const
+{
+	return cacheReserved;
+}
 template <typename CacheData>
-inline CacheData* ResizingCache<CacheData>::GetData() const			
-{ return cache; }
+inline CacheData* ResizingCache<CacheData>::GetData() const
+{
+	return cache;
+}
 template <typename CacheData>
 ResizingCache<CacheData>::ResizingCache(const size_t reserve) :
-cache(new CacheData[reserve]), cacheReserved(reserve), cacheSize(0)	
+	cache(new CacheData[reserve]), cacheReserved(reserve), cacheSize(0)
 { }
 
 template <typename CacheData>
@@ -62,35 +71,41 @@ inline void ResizingCache<CacheData>::Clear()
 }
 
 Renderer::Renderer() :
-bMoveSizeEntered(false),
-bDisposed(false),
-swapChain(nullptr),
-device(nullptr),
-deviceContext(nullptr),
-backBufferRenderTarget(nullptr),
-defaultDepthStencilView(nullptr),
-depthStencilTexture(nullptr),
-forwardPassDepthStencilState(nullptr),
-blitDepthStencilState(nullptr),
-forwardPassRasterState(nullptr),
-linearSamplerState(nullptr),
-inputLayoutTerrainPatch(nullptr),
-inputLayoutStaticMeshInstanced(nullptr),
-pixelShaderBlit(nullptr),
-vertexShaderBlit(nullptr),
-pixelShaderStaticMeshInstanced(nullptr),
-vertexShaderStaticMeshInstanced(nullptr),
-inputLayoutBlit(nullptr),
-vertexBufferBlit(nullptr),
-blitSamplerState(nullptr),
-internalContent(nullptr),
-frameCount(0),
-instanceCache(DEFAULT_INSTANCE_CACHE_SIZE)
+	bMoveSizeEntered(false),
+	bDisposed(false),
+	swapChain(nullptr),
+	device(nullptr),
+	deviceContext(nullptr),
+	backBufferRenderTarget(nullptr),
+	defaultDepthStencilView(nullptr),
+	depthStencilTexture(nullptr),
+	forwardPassDepthStencilState(nullptr),
+	blitDepthStencilState(nullptr),
+	forwardPassRasterState(nullptr),
+	wireframeRasterState(nullptr),
+	linearSamplerState(nullptr),
+	inputLayoutTerrainPatch(nullptr),
+	inputLayoutStaticMeshInstanced(nullptr),
+	pixelShaderBlit(nullptr),
+	vertexShaderBlit(nullptr),
+	pixelShaderStaticMeshInstanced(nullptr),
+	vertexShaderStaticMeshInstanced(nullptr),
+	inputLayoutBlit(nullptr),
+	bufferBlitVertices(nullptr),
+	bufferCameraConstants(nullptr),
+	bufferTerrainPatchInstanceConstants(nullptr),
+	blitSamplerState(nullptr),
+	internalContent(nullptr),
+	frameCount(0),
+	instanceCache(DEFAULT_INSTANCE_CACHE_SIZE)
 {
 	GetInputElementLayoutStaticMesh(&elementLayoutStaticMesh);
 	GetInputElementLayoutStaticMeshInstanced(&elementLayoutStaticMeshInstanced);
 	GetInputElementLayoutBlit(&elementLayoutBlit);
 	GetInputElementLayoutTerrainPatch(&elementLayoutTerrainPatch);
+
+	InitParameters.bLoadBlitShaders = false;
+	InitParameters.bLoadTerrainPatchShaders = true;
 }
 
 bool Renderer::Initialize(HWND hWindow, const RenderParams& params)
@@ -118,6 +133,10 @@ bool Renderer::Initialize(HWND hWindow, const RenderParams& params)
 	if (!result)
 		return false;
 
+	result = InitConstantBuffers();
+	if (!result)
+		return false;
+
 	return true;
 }
 
@@ -135,11 +154,11 @@ bool Renderer::InitWindow(const HWND hWindow, const RenderParams& params)
 	result = adapter->EnumOutputs(0, &adapterOutput);
 
 	UINT modeCount;
-	result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_B8G8R8A8_UNORM, 
+	result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_B8G8R8A8_UNORM,
 		DXGI_ENUM_MODES_INTERLACED, &modeCount, nullptr);
 
 	DXGI_MODE_DESC* modeDescriptions = new DXGI_MODE_DESC[modeCount];
-	result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 
+	result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM,
 		DXGI_ENUM_MODES_INTERLACED, &modeCount, modeDescriptions);
 
 	DXGI_MODE_DESC* descMatch = nullptr;
@@ -317,6 +336,12 @@ bool Renderer::InitRenderObjects()
 	if (FAILED(result))
 		return false;
 
+	rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
+	result = device->CreateRasterizerState(&rasterDesc, &wireframeRasterState);
+
+	if (FAILED(result))
+		return false;
+
 	OutputDebugString("Creating linear sampler state...\n");
 
 	D3D11_SAMPLER_DESC samplerDesc;
@@ -348,37 +373,19 @@ bool Renderer::InitRenderObjects()
 }
 
 bool Renderer::InitInternalShaders()
-{	
-	/*
-	bool result = internalContent->LoadPixelShader(BLIT_PIXEL_SHADER_LOCATION, &pixelShaderBlit);
+{
+	bool result;
+	HRESULT hr;
 
-	if (!result)
-		return false;
-
-	BytecodeBlob vertexShaderBytecode;
-	result = internalContent->LoadVertexShader(BLIT_VERTEX_SHADER_LOCATION,
-		&vertexShaderBlit, &vertexShaderBytecode);
-
-	if (!result)
-		return false;
-
-	HRESULT hr = device->CreateInputLayout(elementLayoutBlit.Desc, elementLayoutBlit.AttributeCount,
-		vertexShaderBytecode.Bytecode, vertexShaderBytecode.BytecodeLength,
-		&inputLayoutBlit);
-	vertexShaderBytecode.Destroy();
-
-	if (FAILED(hr))
-		return false;
-	*/
-
+	// Load instanced static mesh shaders
 	BytecodeBlob staticMeshInstancedBytecode;
-	bool result = internalContent->LoadVertexShader(STATIC_MESH_INSTANCED_VERTEX_SHADER_LOCATION, &vertexShaderStaticMeshInstanced,
+	result = internalContent->LoadVertexShader(STATIC_MESH_INSTANCED_VERTEX_SHADER_LOCATION, &vertexShaderStaticMeshInstanced,
 		&staticMeshInstancedBytecode);
 
 	if (!result)
 		return false;
 
-	HRESULT hr = device->CreateInputLayout(elementLayoutStaticMeshInstanced.Desc, elementLayoutStaticMeshInstanced.AttributeCount,
+	hr = device->CreateInputLayout(elementLayoutStaticMeshInstanced.Desc, elementLayoutStaticMeshInstanced.AttributeCount,
 		staticMeshInstancedBytecode.Bytecode, staticMeshInstancedBytecode.BytecodeLength,
 		&inputLayoutStaticMeshInstanced);
 	staticMeshInstancedBytecode.Destroy();
@@ -391,33 +398,87 @@ bool Renderer::InitInternalShaders()
 	if (!result)
 		return false;
 
-	BytecodeBlob terrainPatchBytecode;
-	result = internalContent->LoadVertexShader(TERRAIN_PATCH_VERTEX_SHADER_LOCATION, &vertexShaderTerrainPatch,
-		&terrainPatchBytecode);
+	// Load blit shaders
+	if (InitParameters.bLoadBlitShaders)
+	{
+		result = internalContent->LoadPixelShader(BLIT_PIXEL_SHADER_LOCATION, &pixelShaderBlit);
 
-	if (!result)
+		if (!result)
+			return false;
+
+		BytecodeBlob vertexShaderBytecode;
+		result = internalContent->LoadVertexShader(BLIT_VERTEX_SHADER_LOCATION,
+			&vertexShaderBlit, &vertexShaderBytecode);
+
+		if (!result)
+			return false;
+
+		hr = device->CreateInputLayout(elementLayoutBlit.Desc, elementLayoutBlit.AttributeCount,
+			vertexShaderBytecode.Bytecode, vertexShaderBytecode.BytecodeLength,
+			&inputLayoutBlit);
+		vertexShaderBytecode.Destroy();
+
+		if (FAILED(hr))
+			return false;
+	}
+
+	// Load terrain patch shaders
+	if (InitParameters.bLoadTerrainPatchShaders)
+	{
+		BytecodeBlob terrainPatchBytecode;
+		result = internalContent->LoadVertexShader(TERRAIN_PATCH_VERTEX_SHADER_LOCATION, &vertexShaderTerrainPatch,
+			&terrainPatchBytecode);
+
+		if (!result)
+			return false;
+
+		hr = device->CreateInputLayout(elementLayoutTerrainPatch.Desc, elementLayoutTerrainPatch.AttributeCount,
+			terrainPatchBytecode.Bytecode, terrainPatchBytecode.BytecodeLength,
+			&inputLayoutTerrainPatch);
+		terrainPatchBytecode.Destroy();
+
+		if (FAILED(hr))
+			return false;
+
+		result = internalContent->LoadPixelShader(TERRAIN_PATCH_PIXEL_SHADER_LOCATION, &pixelShaderTerrainPatch);
+
+		if (!result)
+			return false;
+	}
+
+	return true;
+}
+
+bool Renderer::InitConstantBuffers()
+{
+	D3D11_BUFFER_DESC cameraBufferDesc;
+	ZeroMemory(&cameraBufferDesc, sizeof(cameraBufferDesc));
+	cameraBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cameraBufferDesc.ByteWidth = CAMERA_CONSTANT_BUFFER_SIZE;
+	cameraBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	cameraBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+
+	HRESULT result = device->CreateBuffer(&cameraBufferDesc, nullptr, &bufferCameraConstants);
+	if (FAILED(result))
 		return false;
 
-	hr = device->CreateInputLayout(elementLayoutTerrainPatch.Desc, elementLayoutTerrainPatch.AttributeCount,
-		terrainPatchBytecode.Bytecode, terrainPatchBytecode.BytecodeLength,
-		&inputLayoutTerrainPatch);
-	terrainPatchBytecode.Destroy();
+	D3D11_BUFFER_DESC terrainPatchBufferDesc;
+	ZeroMemory(&terrainPatchBufferDesc, sizeof(terrainPatchBufferDesc));
+	terrainPatchBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	terrainPatchBufferDesc.ByteWidth = TERRAIN_PATCH_INSTANCE_CONSTANT_BUFFER_SIZE;
+	terrainPatchBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	terrainPatchBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 
-	if (FAILED(hr))
+	result = device->CreateBuffer(&terrainPatchBufferDesc, nullptr, &bufferTerrainPatchInstanceConstants);
+	if (FAILED(result))
 		return false;
-
-	result = internalContent->LoadPixelShader(TERRAIN_PATCH_PIXEL_SHADER_LOCATION, &pixelShaderTerrainPatch);
-
-	if (!result)
-		return false;
-
 
 	return true;
 }
 
 bool Renderer::InitInternalVertexBuffers()
 {
-	float blitBufferData[] = 
+	float blitBufferData[] =
 	{
 		-1.0f, 1.0f,
 		0.0f, 0.0f,
@@ -438,13 +499,13 @@ bool Renderer::InitInternalVertexBuffers()
 	blitBufferDesc.CPUAccessFlags = 0;
 	blitBufferDesc.MiscFlags = 0;
 	blitBufferDesc.StructureByteStride = 0;
-	blitBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	blitBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 
 	D3D11_SUBRESOURCE_DATA subData;
 	ZeroMemory(&subData, sizeof(subData));
 	subData.pSysMem = blitBufferData;
 
-	HRESULT hr = device->CreateBuffer(&blitBufferDesc, &subData, &vertexBufferBlit);
+	HRESULT hr = device->CreateBuffer(&blitBufferDesc, &subData, &bufferBlitVertices);
 	if (FAILED(hr))
 		return false;
 
@@ -553,6 +614,16 @@ void Renderer::RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPas
 	Frustum cameraFrustum;
 	camera->GetFrustum(&cameraFrustum, renderParameters.Extent);
 
+	// Prepare the camera transform data
+	XMFLOAT4X4 transforms[2];
+	camera->GetViewMatrix(&transforms[0]);
+	camera->GetProjectionMatrix(&transforms[1], renderParameters.Extent);
+
+	D3D11_MAPPED_SUBRESOURCE mappedSubRes;
+	deviceContext->Map(bufferCameraConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubRes);
+	memcpy(mappedSubRes.pData, transforms, sizeof(transforms));
+	deviceContext->Unmap(bufferCameraConstants, 0);
+
 	// Set render state
 	deviceContext->RSSetViewports(1, &viewport);
 	deviceContext->OMSetRenderTargets(renderTargetsCount, renderTargets, depthStencilView);
@@ -562,6 +633,12 @@ void Renderer::RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPas
 	// Collect all of the visible meshes
 	NodeCollection nodes;
 	CollectVisibleNodes(sceneRoot, cameraFrustum, nodes);
+
+	// Print total number of visible nodes
+	/* stringstream strStream;
+	strStream << "Total Instanced Static Meshes: " << nodes.InstancedStaticMeshes.size() <<
+		"\nTotal Terrain Patches: " << nodes.TerrainPatches.size() << "\n";
+	OutputDebugString(strStream.str().c_str());*/
 
 	RenderStaticMeshesInstanced(sceneRoot, camera, nodes);
 	RenderTerrainPatches(sceneRoot, camera, nodes);
@@ -573,28 +650,6 @@ void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera
 	XMFLOAT3 cameraPosition;
 	camera->GetPosition(&cameraPosition);
 	XMVECTOR cameraPositionVec = XMLoadFloat3(&cameraPosition);
-
-	// Prepare the transform data uniform buffer
-	ID3D11Buffer* transformBuffer;
-	D3D11_BUFFER_DESC transformBufferDesc;
-	transformBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	transformBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	transformBufferDesc.ByteWidth = sizeof(XMFLOAT4X4) * 2;
-	transformBufferDesc.CPUAccessFlags = 0;
-	transformBufferDesc.MiscFlags = 0;
-	transformBufferDesc.StructureByteStride = 0;
-
-	XMFLOAT4X4 transforms[2];
-	camera->GetViewMatrix(&transforms[0]);
-	camera->GetProjectionMatrix(&transforms[1], renderParameters.Extent);
-
-	D3D11_SUBRESOURCE_DATA transformData;
-	ZeroMemory(&transformData, sizeof(transformData));
-	transformData.pSysMem = transforms;
-
-	HRESULT result = device->CreateBuffer(&transformBufferDesc, &transformData, &transformBuffer);
-	if (FAILED(result))
-		OutputDebugString("Failed to create transform buffer!\n");
 
 	// Set primitive topology and input layout for static meshes
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -649,11 +704,13 @@ void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera
 
 		if (currentMaterial->Type == MATERIAL_TYPE_STANDARD)
 		{
-			deviceContext->VSSetConstantBuffers(0, 1, &transformBuffer);
+			deviceContext->VSSetConstantBuffers(0, 1, &bufferCameraConstants);
 
 			deviceContext->PSSetSamplers(0, 1, &linearSamplerState);
-			deviceContext->PSSetShaderResources(0, currentMaterial->PixelResourceViews.size(), currentMaterial->PixelResourceViews.data());
-			deviceContext->PSSetConstantBuffers(0, currentMaterial->PixelConstantBuffers.size(), currentMaterial->PixelConstantBuffers.data());
+			if (currentMaterial->PixelResourceViews.size() > 0)
+				deviceContext->PSSetShaderResources(0, currentMaterial->PixelResourceViews.size(), currentMaterial->PixelResourceViews.data());
+			if (currentMaterial->PixelConstantBuffers.size() > 0)
+				deviceContext->PSSetConstantBuffers(0, currentMaterial->PixelConstantBuffers.size(), currentMaterial->PixelConstantBuffers.data());
 		}
 
 		while (it != endMaterialIt)
@@ -691,7 +748,7 @@ void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera
 			ZeroMemory(&subData, sizeof(subData));
 			subData.pSysMem = instanceCache.GetData();
 
-			result = device->CreateBuffer(&bufferDesc, &subData, &instanceBuffer);
+			HRESULT result = device->CreateBuffer(&bufferDesc, &subData, &instanceBuffer);
 			if (FAILED(result))
 				OutputDebugString("Failed to create instance buffer!\n");
 
@@ -706,13 +763,36 @@ void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera
 			instanceBuffer->Release();
 		}
 	}
-
-	transformBuffer->Release();
 }
 
 void Renderer::RenderTerrainPatches(SceneNode* sceneRoot, ICamera* camera, NodeCollection& nodes)
 {
+	// Set primitive topology and input layout for static meshes
+	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	deviceContext->IASetInputLayout(inputLayoutTerrainPatch);
 
+	deviceContext->VSSetShader(vertexShaderTerrainPatch, nullptr, 0);
+	deviceContext->PSSetShader(pixelShaderTerrainPatch, nullptr, 0);
+
+	ID3D11Buffer* vertexShaderConstantBuffers[] = { bufferCameraConstants, bufferTerrainPatchInstanceConstants };
+	deviceContext->VSSetConstantBuffers(0, 2, &bufferCameraConstants);
+
+	D3D11_MAPPED_SUBRESOURCE mappedSubRes;
+
+	for (auto terrainNode : nodes.TerrainPatches)
+	{
+		UINT stride = elementLayoutTerrainPatch.Stride;
+		UINT offset = 0;
+
+		deviceContext->IASetVertexBuffers(0, 1, &terrainNode->Ref.TerrainPatch->MeshData.VertexBuffer, &stride, &offset);
+		deviceContext->IASetIndexBuffer(terrainNode->Ref.TerrainPatch->MeshData.IndexBuffer, DXGI_FORMAT_R16_UINT, offset);
+
+		deviceContext->Map(bufferTerrainPatchInstanceConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubRes);
+		memcpy(mappedSubRes.pData, &terrainNode->Transform.Global, sizeof(XMMATRIX));
+		deviceContext->Unmap(bufferTerrainPatchInstanceConstants, 0);
+
+		deviceContext->DrawIndexed(terrainNode->Ref.TerrainPatch->MeshData.IndexCount, 0, 0);
+	}
 }
 
 void Renderer::RenderFrame(SceneNode* sceneRoot, ICamera* camera)
@@ -772,12 +852,15 @@ void Renderer::Destroy()
 	if (swapChain != nullptr && IsFullscreen())
 		swapChain->SetFullscreenState(FALSE, nullptr);
 
-	SAFE_RELEASE(vertexBufferBlit);
+	SAFE_RELEASE(bufferBlitVertices);
+	SAFE_RELEASE(bufferCameraConstants);
+	SAFE_RELEASE(bufferTerrainPatchInstanceConstants);
 	SAFE_RELEASE(inputLayoutBlit);
 	SAFE_RELEASE(inputLayoutStaticMeshInstanced);
 	SAFE_RELEASE(inputLayoutTerrainPatch);
 	SAFE_RELEASE(linearSamplerState);
 	SAFE_RELEASE(forwardPassRasterState);
+	SAFE_RELEASE(wireframeRasterState);
 	SAFE_RELEASE(forwardPassDepthStencilState);
 	SAFE_RELEASE(blitDepthStencilState);
 	SAFE_RELEASE(blitSamplerState);

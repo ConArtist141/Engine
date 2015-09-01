@@ -22,7 +22,7 @@ TerrainPatchError TerrainPatch::GenerateVertexBuffer(const size_t mipLevel, ID3D
 	// Position and normal
 	size_t elementByteWidth = 2 * sizeof(XMFLOAT3);
 	size_t elementCount = MipLevels[mipLevel].ExtentX * MipLevels[mipLevel].ExtentY;
-	unique_ptr<XMFLOAT3[]> vertexData(new XMFLOAT3[elementCount]);
+	unique_ptr<XMFLOAT3[]> vertexData(new XMFLOAT3[2 * elementCount]);
 
 	XMVECTOR offsetVec = XMLoadFloat3(&MeshOffset);
 
@@ -92,6 +92,8 @@ TerrainPatchError TerrainPatch::GenerateVertexBuffer(const size_t mipLevel, ID3D
 	if (FAILED(result))
 		return TERRAIN_PATCH_ERROR_VERTEX_BUFFER_CREATION_FAILED;
 
+	MeshData.VertexCount = elementCount;
+
 	return TERRAIN_PATCH_ERROR_OK;
 }
 
@@ -104,24 +106,38 @@ TerrainPatchError TerrainPatch::GenerateIndexBuffer(const size_t mipLevel, ID3D1
 	size_t extentX = MipLevels[mipLevel].ExtentX;
 	size_t extentY = MipLevels[mipLevel].ExtentY - 1;
 
-	size_t yParity;
 	size_t yParityBegin = 0;
 	for (size_t yLoc = 0; yLoc < extentY; ++yLoc)
 	{
-		size_t xLoc = 0;
-
-		yParity = yParityBegin;
-		indices.push_back(static_cast<uint16_t>(xLoc + (yLoc + yParity) * extentX));
-
-		for (; xLoc < extentX; ++xLoc)
+		size_t yParity = yParityBegin;
+		for (size_t xLoc = 1; xLoc < extentX; ++xLoc)
 		{
-			indices.push_back(static_cast<uint16_t>(xLoc + (yLoc + yParity) * extentX));
-			yParity = (yParity + 1) % 2;
-			indices.push_back(static_cast<uint16_t>(xLoc + (yLoc + yParity) * extentX));
-		}
-		--xLoc;
+			if (yParity == 0)
+			{
+				indices.push_back(static_cast<uint16_t>(xLoc - 1 + yLoc * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc - 1 + (yLoc + 1) * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc + yLoc * extentX));
 
-		indices.push_back(static_cast<uint16_t>(xLoc + (yLoc + yParity) * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc + yLoc * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc - 1 + (yLoc + 1) * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc + (yLoc + 1) * extentX));
+
+				yParity = 1;
+			}
+			else
+			{
+				indices.push_back(static_cast<uint16_t>(xLoc - 1 + (yLoc + 1) * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc + (yLoc + 1) * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc - 1 + yLoc * extentX));
+
+				indices.push_back(static_cast<uint16_t>(xLoc - 1 + yLoc * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc + (yLoc + 1) * extentX));
+				indices.push_back(static_cast<uint16_t>(xLoc + yLoc * extentX));
+
+				yParity = 0;
+			}
+		}
+
 		yParityBegin = (yParityBegin + 1) % 2;
 	}
 
@@ -140,6 +156,8 @@ TerrainPatchError TerrainPatch::GenerateIndexBuffer(const size_t mipLevel, ID3D1
 	if (FAILED(result))
 		return TERRAIN_PATCH_ERROR_INDEX_BUFFER_CREATION_FAILED;
 
+	MeshData.IndexCount = indices.size();
+
 	return TERRAIN_PATCH_ERROR_OK;
 }
 
@@ -150,24 +168,53 @@ TerrainPatchError TerrainPatch::GenerateMesh(const size_t mipLevel, ID3D11Device
 	DestroyMesh();
 
 	result = GenerateVertexBuffer(mipLevel, device);
-	if (!result)
+	if (result != TERRAIN_PATCH_ERROR_OK)
 		return result;
 
 	result = GenerateIndexBuffer(mipLevel, device);
-	if (!result)
+	if (result != TERRAIN_PATCH_ERROR_OK)
 		return result;
 
 	return TERRAIN_PATCH_ERROR_OK;
+}
+
+bool IsPowerOfTwo(unsigned int x)
+{
+	while (((x & 1) == 0) && x > 1)
+		x >>= 1;
+	return (x == 1);
+}
+
+TerrainPatch::TerrainPatch(const size_t extentX, const size_t extentY, 
+	const DirectX::XMFLOAT3 cellSize, const size_t mipLevelCount) :
+	CellSize(cellSize), MipCount(mipLevelCount), CurrentMip(0), MipLevels()
+{
+	assert(IsPowerOfTwo(extentX));
+	assert(IsPowerOfTwo(extentY));
+
+	auto mipExtentX = extentX;
+	auto mipExtentY = extentY;
+
+	for (size_t i = 0; i < mipLevelCount; ++i, mipExtentX /= 2, mipExtentY /= 2)
+	{
+		assert(mipExtentX > 0);
+		assert(mipExtentY > 0);
+
+		MipLevels.push_back(HeightField(mipExtentX, mipExtentY));
+	}
+
+	ZeroMemory(&MeshData, sizeof(MeshData));
+	ZeroMemory(&MeshOffset, sizeof(MeshOffset));
 }
 
 void HeightField::ComputeHeightBounds()
 {
 	size_t count = ExtentX * ExtentY;
 	HeightBounds.Min = std::numeric_limits<float>::infinity();
-	HeightBounds.Max = -HeightBounds.Min;
+	HeightBounds.Max = -std::numeric_limits<float>::infinity();
 	for (size_t i = 0; i < count; ++i)
 	{
-		auto height = Heights[0];
+		auto height = Heights[i];
 		if (height < HeightBounds.Min)
 			HeightBounds.Min = height;
 		if (height > HeightBounds.Max)
