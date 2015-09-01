@@ -150,8 +150,9 @@ private:
 	ID3D11DepthStencilState* blitDepthStencilState;
 	ID3D11RasterizerState* forwardPassRasterState;
 	ID3D11RasterizerState* wireframeRasterState;
-	ID3D11SamplerState* linearSamplerState;
-	ID3D11SamplerState* blitSamplerState;
+	ID3D11SamplerState* samplerStateLinearStaticMesh;
+	ID3D11SamplerState* samplerStateBlit;
+	ID3D11SamplerState* samplerStateTerrainPatch;
 
 	InputElementLayout elementLayoutStaticMesh;
 	InputElementLayout elementLayoutStaticMeshInstanced;

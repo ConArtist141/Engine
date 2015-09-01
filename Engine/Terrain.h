@@ -51,6 +51,11 @@ public:
 		size_t IndexCount;
 	} MeshData;
 
+	struct
+	{
+		ID3D11ShaderResourceView* Albedo;
+	} MaterialData;
+
 	size_t CurrentMip;
 	DirectX::XMFLOAT3 CellSize;
 	DirectX::XMFLOAT3 MeshOffset;

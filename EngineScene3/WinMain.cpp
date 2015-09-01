@@ -84,6 +84,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			ID3D11ShaderResourceView* resourceView1 = nullptr;
 			ID3D11Resource* texture2 = nullptr;
 			ID3D11ShaderResourceView* resourceView2 = nullptr;
+			ID3D11Resource* texture3 = nullptr;
+			ID3D11ShaderResourceView* resourceView3 = nullptr;
 
 			// Create terrain patch
 			size_t terrainPatchSize = 64;
@@ -108,6 +110,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			package.LoadMesh("stage.DAE", &mesh2);
 			package.LoadTexture2D("albedo.dds", &texture1, &resourceView1);
 			package.LoadTexture2D("albedo2.dds", &texture2, &resourceView2);
+			package.LoadTexture2D("albedo3.dds", &texture3, &resourceView3);
+
+			terrainPatch.MaterialData.Albedo = resourceView3;
 
 			// Create a material
 			MaterialData* material1 = new MaterialData;

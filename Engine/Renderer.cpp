@@ -83,7 +83,7 @@ Renderer::Renderer() :
 	blitDepthStencilState(nullptr),
 	forwardPassRasterState(nullptr),
 	wireframeRasterState(nullptr),
-	linearSamplerState(nullptr),
+	samplerStateLinearStaticMesh(nullptr),
 	inputLayoutTerrainPatch(nullptr),
 	inputLayoutStaticMeshInstanced(nullptr),
 	pixelShaderBlit(nullptr),
@@ -94,7 +94,7 @@ Renderer::Renderer() :
 	bufferBlitVertices(nullptr),
 	bufferCameraConstants(nullptr),
 	bufferTerrainPatchInstanceConstants(nullptr),
-	blitSamplerState(nullptr),
+	samplerStateBlit(nullptr),
 	internalContent(nullptr),
 	frameCount(0),
 	instanceCache(DEFAULT_INSTANCE_CACHE_SIZE)
@@ -354,7 +354,7 @@ bool Renderer::InitRenderObjects()
 	samplerDesc.MinLOD = 0;
 	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-	result = device->CreateSamplerState(&samplerDesc, &linearSamplerState);
+	result = device->CreateSamplerState(&samplerDesc, &samplerStateLinearStaticMesh);
 
 	if (FAILED(result))
 		return false;
@@ -364,7 +364,7 @@ bool Renderer::InitRenderObjects()
 	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
 	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 
-	result = device->CreateSamplerState(&samplerDesc, &blitSamplerState);
+	result = device->CreateSamplerState(&samplerDesc, &samplerStateBlit);
 
 	if (FAILED(result))
 		return false;
@@ -695,6 +695,8 @@ void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera
 	// Set material stage parameters
 	deviceContext->VSSetShader(vertexShaderStaticMeshInstanced, nullptr, 0);
 	deviceContext->PSSetShader(pixelShaderStaticMeshInstanced, nullptr, 0);
+	deviceContext->PSSetSamplers(0, 1, &samplerStateLinearStaticMesh);
+	deviceContext->VSSetConstantBuffers(0, 1, &bufferCameraConstants);
 
 	while (it != endIt)
 	{
@@ -704,9 +706,6 @@ void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera
 
 		if (currentMaterial->Type == MATERIAL_TYPE_STANDARD)
 		{
-			deviceContext->VSSetConstantBuffers(0, 1, &bufferCameraConstants);
-
-			deviceContext->PSSetSamplers(0, 1, &linearSamplerState);
 			if (currentMaterial->PixelResourceViews.size() > 0)
 				deviceContext->PSSetShaderResources(0, currentMaterial->PixelResourceViews.size(), currentMaterial->PixelResourceViews.data());
 			if (currentMaterial->PixelConstantBuffers.size() > 0)
@@ -773,6 +772,7 @@ void Renderer::RenderTerrainPatches(SceneNode* sceneRoot, ICamera* camera, NodeC
 
 	deviceContext->VSSetShader(vertexShaderTerrainPatch, nullptr, 0);
 	deviceContext->PSSetShader(pixelShaderTerrainPatch, nullptr, 0);
+	deviceContext->PSSetSamplers(0, 1, &samplerStateLinearStaticMesh);
 
 	ID3D11Buffer* vertexShaderConstantBuffers[] = { bufferCameraConstants, bufferTerrainPatchInstanceConstants };
 	deviceContext->VSSetConstantBuffers(0, 2, &bufferCameraConstants);
@@ -786,6 +786,7 @@ void Renderer::RenderTerrainPatches(SceneNode* sceneRoot, ICamera* camera, NodeC
 
 		deviceContext->IASetVertexBuffers(0, 1, &terrainNode->Ref.TerrainPatch->MeshData.VertexBuffer, &stride, &offset);
 		deviceContext->IASetIndexBuffer(terrainNode->Ref.TerrainPatch->MeshData.IndexBuffer, DXGI_FORMAT_R16_UINT, offset);
+		deviceContext->PSSetShaderResources(0, 1, &terrainNode->Ref.TerrainPatch->MaterialData.Albedo);
 
 		deviceContext->Map(bufferTerrainPatchInstanceConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubRes);
 		memcpy(mappedSubRes.pData, &terrainNode->Transform.Global, sizeof(XMMATRIX));
@@ -858,12 +859,12 @@ void Renderer::Destroy()
 	SAFE_RELEASE(inputLayoutBlit);
 	SAFE_RELEASE(inputLayoutStaticMeshInstanced);
 	SAFE_RELEASE(inputLayoutTerrainPatch);
-	SAFE_RELEASE(linearSamplerState);
+	SAFE_RELEASE(samplerStateLinearStaticMesh);
 	SAFE_RELEASE(forwardPassRasterState);
 	SAFE_RELEASE(wireframeRasterState);
 	SAFE_RELEASE(forwardPassDepthStencilState);
 	SAFE_RELEASE(blitDepthStencilState);
-	SAFE_RELEASE(blitSamplerState);
+	SAFE_RELEASE(samplerStateBlit);
 
 	DestroyDeferredTargets();
 	DestroyRenderTarget();
