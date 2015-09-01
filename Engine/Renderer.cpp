@@ -23,7 +23,8 @@ inline CacheData* ResizingCache<CacheData>::GetData() const
 { return cache; }
 template <typename CacheData>
 ResizingCache<CacheData>::ResizingCache(const size_t reserve) :
-cache(new CacheData[reserve]), cacheReserved(reserve), cacheSize(0)	{ }
+cache(new CacheData[reserve]), cacheReserved(reserve), cacheSize(0)	
+{ }
 
 template <typename CacheData>
 void ResizingCache<CacheData>::Reserve(const size_t reserveCount)
