@@ -87,6 +87,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			ID3D11Resource* texture3 = nullptr;
 			ID3D11ShaderResourceView* resourceView3 = nullptr;
 
+			// Load resources
+			package.SetVertexLayout(renderer.GetElementLayoutStaticMeshInstanced());
+			package.LoadMesh("ball.DAE", &mesh1);
+			package.LoadMesh("stage.DAE", &mesh2);
+			package.LoadTexture2D("albedo.dds", &texture1, &resourceView1);
+			package.LoadTexture2D("albedo2.dds", &texture2, &resourceView2);
+			package.LoadTexture2D("albedo3.dds", &texture3, &resourceView3);
+
 			// Create terrain patch
 			size_t terrainPatchSize = 64;
 			float height = 30.0f;
@@ -100,18 +108,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 					float fx = static_cast<float>(x) - static_cast<float>(terrainPatchSize / 2);
 					terrainPatch(x, y) = height * exp(-(fx * fx + fy * fy) / (2 * dropoff * dropoff));
 				}
+
 			terrainPatch.MipLevels[0].ComputeHeightBounds();
 			terrainPatch.MeshOffset = XMFLOAT3(-static_cast<float>(terrainPatchSize) / 2, -4.0f, -20.0f - static_cast<float>(terrainPatchSize));
 			terrainPatch.GenerateMesh(0, renderer.GetDevice());
-
-			// Load resources
-			package.SetVertexLayout(renderer.GetElementLayoutStaticMeshInstanced());
-			package.LoadMesh("ball.DAE", &mesh1);
-			package.LoadMesh("stage.DAE", &mesh2);
-			package.LoadTexture2D("albedo.dds", &texture1, &resourceView1);
-			package.LoadTexture2D("albedo2.dds", &texture2, &resourceView2);
-			package.LoadTexture2D("albedo3.dds", &texture3, &resourceView3);
-
 			terrainPatch.MaterialData.Albedo = resourceView3;
 
 			// Create a material
