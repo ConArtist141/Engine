@@ -86,7 +86,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			ID3D11ShaderResourceView* resourceView2 = nullptr;
 			ID3D11Resource* texture3 = nullptr;
 			ID3D11ShaderResourceView* resourceView3 = nullptr;
-
+			 
 			// Load resources
 			package.SetVertexLayout(renderer.GetElementLayoutStaticMeshInstanced());
 			package.LoadMesh("ball.DAE", &mesh1);
