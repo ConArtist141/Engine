@@ -89,11 +89,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			 
 			// Load resources
 			package.SetVertexLayout(renderer.GetElementLayoutStaticMeshInstanced());
-			package.LoadMesh("ball.DAE", &mesh1);
-			package.LoadMesh("stage.DAE", &mesh2);
-			package.LoadTexture2D("albedo.dds", &texture1, &resourceView1);
-			package.LoadTexture2D("albedo2.dds", &texture2, &resourceView2);
-			package.LoadTexture2D("albedo3.dds", &texture3, &resourceView3);
+			package.LoadMesh("..\\Content\\ball.DAE", &mesh1);
+			package.LoadMesh("..\\Content\\stage.DAE", &mesh2);
+			package.LoadTexture2D("..\\Content\\albedo.dds", &texture1, &resourceView1);
+			package.LoadTexture2D("..\\Content\\albedo2.dds", &texture2, &resourceView2);
+			package.LoadTexture2D("..\\Content\\albedo3.dds", &texture3, &resourceView3);
 
 			// Create terrain patch
 			size_t terrainPatchSize = 64;

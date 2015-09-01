@@ -87,7 +87,7 @@ bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** m
 {
 	OutputDebugString("Loading resource ");
 	OutputDebugString(contentLocation.c_str());
-	OutputDebugString("...\n");
+	OutputDebugString("\n");
 
 	if (vertexStrideFloat == 0)
 	{
@@ -359,7 +359,7 @@ bool ContentPackage::LoadTexture2D(const std::string& contentLocation, ID3D11Res
 {
 	OutputDebugString("Loading resource ");
 	OutputDebugString(contentLocation.c_str());
-	OutputDebugString("...\n");
+	OutputDebugString("\n");
 
 	auto findResult = textures.find(contentLocation);
 	if (findResult != textures.end())
@@ -404,7 +404,7 @@ bool ContentPackage::LoadVertexShader(const std::string& contentLocation, ID3D11
 {
 	OutputDebugString("Loading resource ");
 	OutputDebugString(contentLocation.c_str());
-	OutputDebugString("...\n");
+	OutputDebugString("\n");
 
 	auto findResult = vertexShaders.find(contentLocation);
 	if (findResult != vertexShaders.end())
@@ -453,7 +453,7 @@ bool ContentPackage::LoadPixelShader(const std::string& contentLocation, ID3D11P
 {
 	OutputDebugString("Loading resource ");
 	OutputDebugString(contentLocation.c_str());
-	OutputDebugString("...\n");
+	OutputDebugString("\n");
 
 	auto findResult = pixelShaders.find(contentLocation);
 	if (findResult != pixelShaders.end())
@@ -516,7 +516,7 @@ void ContentPackage::Destroy()
 
 		OutputDebugString("Destroying material ");
 		OutputDebugString(material.first.c_str());
-		OutputDebugString("....\n");
+		OutputDebugString("\n");
 	}
 
 	for (auto mesh : staticMeshes)
@@ -526,7 +526,7 @@ void ContentPackage::Destroy()
 
 		OutputDebugString("Destroying resource ");
 		OutputDebugString(mesh.first.c_str());
-		OutputDebugString("....\n");
+		OutputDebugString("\n");
 	}
 
 	for (auto texture : textures)
@@ -536,7 +536,7 @@ void ContentPackage::Destroy()
 
 		OutputDebugString("Destroying resource ");
 		OutputDebugString(texture.first.c_str());
-		OutputDebugString("....\n");
+		OutputDebugString("\n");
 	}
 
 	for (auto shader : pixelShaders)
@@ -545,7 +545,7 @@ void ContentPackage::Destroy()
 
 		OutputDebugString("Destroying resource ");
 		OutputDebugString(shader.first.c_str());
-		OutputDebugString("....\n");
+		OutputDebugString("\n");
 	}
 
 	for (auto shader : vertexShaders)
@@ -554,6 +554,6 @@ void ContentPackage::Destroy()
 
 		OutputDebugString("Destroying resource ");
 		OutputDebugString(shader.first.c_str());
-		OutputDebugString("....\n");
+		OutputDebugString("\n");
 	}
 }

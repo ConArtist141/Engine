@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{2fded047-aa54-4e6e-9099-c781baf7c071}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Content">
+      <UniqueIdentifier>{831fcde1-5157-4257-81b7-800fd533cb9f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -25,6 +28,12 @@
   <ItemGroup>
     <None Include="ShaderHeader.hlsli">
       <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\Content\ball.DAE">
+      <Filter>Content</Filter>
+    </None>
+    <None Include="..\Content\stage.DAE">
+      <Filter>Content</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -40,5 +49,16 @@
     <FxCompile Include="TerrainPatchPixel.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\Content\albedo.dds">
+      <Filter>Content</Filter>
+    </Image>
+    <Image Include="..\Content\albedo2.dds">
+      <Filter>Content</Filter>
+    </Image>
+    <Image Include="..\Content\albedo3.dds">
+      <Filter>Content</Filter>
+    </Image>
   </ItemGroup>
 </Project>
