@@ -26,29 +26,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ShaderHeader.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="..\Content\ball.DAE">
       <Filter>Content</Filter>
     </None>
     <None Include="..\Content\stage.DAE">
       <Filter>Content</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="StaticMeshInstancedPixel.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="StaticMeshInstancedVertex.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="TerrainPatchVertex.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="TerrainPatchPixel.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\Content\albedo.dds">
