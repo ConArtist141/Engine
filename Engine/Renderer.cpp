@@ -13,11 +13,14 @@ using namespace DirectX;
 #define SAFE_RELEASE(x) if (x != nullptr) x->Release();
 
 template <typename CacheData>
-inline size_t ResizingCache<CacheData>::GetSize() const				{ return cacheSize; }
+inline size_t ResizingCache<CacheData>::GetSize() const				
+{ return cacheSize; }
 template <typename CacheData>
-inline size_t ResizingCache<CacheData>::GetReservedSize() const		{ return cacheReserved; }
+inline size_t ResizingCache<CacheData>::GetReservedSize() const		
+{ return cacheReserved; }
 template <typename CacheData>
-inline CacheData* ResizingCache<CacheData>::GetData() const			{ return cache; }
+inline CacheData* ResizingCache<CacheData>::GetData() const			
+{ return cache; }
 template <typename CacheData>
 ResizingCache<CacheData>::ResizingCache(const size_t reserve) :
 cache(new CacheData[reserve]), cacheReserved(reserve), cacheSize(0)	{ }

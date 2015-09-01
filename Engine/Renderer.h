@@ -155,33 +155,27 @@ private:
 };
 
 template <typename CacheData>
-inline ResizingCache<CacheData>::~ResizingCache()			{ delete[] cache; }
-
-inline RenderParams Renderer::GetRenderParams() const		{ return renderParameters; }
-inline bool Renderer::IsFullscreen() const					{ return !renderParameters.Windowed; }
-inline bool Renderer::IsWindowed() const					{ return renderParameters.Windowed; }
-inline bool Renderer::MoveSizeEntered() const				{ return bMoveSizeEntered; }
-inline void Renderer::SetMoveSizeEntered(const bool value)	{ bMoveSizeEntered = value; }
-inline ID3D11Device* Renderer::GetDevice() const			{ return device; }
-
+inline ResizingCache<CacheData>::~ResizingCache()			
+{ delete[] cache; }
+inline RenderParams Renderer::GetRenderParams() const		
+{ return renderParameters; }
+inline bool Renderer::IsFullscreen() const					
+{ return !renderParameters.Windowed; }
+inline bool Renderer::IsWindowed() const					
+{ return renderParameters.Windowed; }
+inline bool Renderer::MoveSizeEntered() const				
+{ return bMoveSizeEntered; }
+inline void Renderer::SetMoveSizeEntered(const bool value)	
+{ bMoveSizeEntered = value; }
+inline ID3D11Device* Renderer::GetDevice() const			
+{ return device; }
 inline const InputElementLayout * Renderer::GetElementLayoutStaticMesh() const
-{
-	return &elementLayoutStaticMesh;
-}
-
+{ return &elementLayoutStaticMesh; }
 inline const InputElementLayout * Renderer::GetElementLayoutStaticMeshInstanced() const
-{
-	return &elementLayoutStaticMeshInstanced;
-}
-
+{ return &elementLayoutStaticMeshInstanced; }
 inline const InputElementLayout * Renderer::GetElementLayoutBlit() const
-{
-	return &elementLayoutBlit;
-}
-
+{ return &elementLayoutBlit; }
 inline const InputElementLayout * Renderer::GetElementLayoutTerrainPatch() const
-{
-	return &elementLayoutTerrainPatch;
-}
+{ return &elementLayoutTerrainPatch; }
 
 #endif

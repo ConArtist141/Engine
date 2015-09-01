@@ -35,12 +35,18 @@ public:
 	void Destroy();
 };
 
-inline ID3D11Buffer* StaticMesh::GetVertexBuffer() const		{ return vertexBuffer; }
-inline ID3D11Buffer* StaticMesh::GetIndexBuffer() const			{ return indexBuffer; }
-inline DXGI_FORMAT StaticMesh::GetIndexFormat() const			{ return indexFormat; }
-inline size_t StaticMesh::GetIndexCount() const					{ return indexCount; }
-inline size_t StaticMesh::GetIndexOffset()	const				{ return indexOffset; }
-inline void StaticMesh::GetMeshBounds(Bounds* boundsOut) const	{ *boundsOut = meshBounds; }
+inline ID3D11Buffer* StaticMesh::GetVertexBuffer() const		
+{ return vertexBuffer; }
+inline ID3D11Buffer* StaticMesh::GetIndexBuffer() const			
+{ return indexBuffer; }
+inline DXGI_FORMAT StaticMesh::GetIndexFormat() const			
+{ return indexFormat; }
+inline size_t StaticMesh::GetIndexCount() const					
+{ return indexCount; }
+inline size_t StaticMesh::GetIndexOffset()	const				
+{ return indexOffset; }
+inline void StaticMesh::GetMeshBounds(Bounds* boundsOut) const	
+{ *boundsOut = meshBounds; }
 
 #define VERTEX_ATTRIBUTE_DISABLED -1
 
