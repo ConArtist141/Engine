@@ -8,7 +8,7 @@
 
 class StaticMesh;
 class Renderer;
-class Material;
+class MaterialData;
 
 class BytecodeBlob
 {
@@ -26,7 +26,7 @@ protected:
 	std::map<std::string, std::pair<ID3D11Resource*, ID3D11ShaderResourceView*>> textures;
 	std::map<std::string, ID3D11VertexShader*> vertexShaders;
 	std::map<std::string, ID3D11PixelShader*> pixelShaders;
-	std::map<std::string, Material*> materials;
+	std::map<std::string, MaterialData*> materials;
 
 	ID3D11Device* device;
 
@@ -60,8 +60,8 @@ public:
 	bool LoadVertexShader(const std::string& contentLocation, ID3D11VertexShader** shaderOut);
 	bool LoadPixelShader(const std::string& contentLocation, ID3D11PixelShader** shaderOut);
 
-	void SetMaterial(const std::string& contentName, Material* material);
-	bool GetMaterial(const std::string& contentName, Material** material);
+	void SetMaterial(const std::string& contentName, MaterialData* material);
+	bool GetMaterial(const std::string& contentName, MaterialData** material);
 
 	void Destroy();
 };

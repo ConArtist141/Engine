@@ -75,7 +75,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 		WindowLinkObjects linkObjects = { &renderer, &inputHandler };
 		LinkWindow(hWindow, &linkObjects);
 
-		if (SUCCEEDED(renderer.Initialize(hWindow, params)))
+		if (renderer.Initialize(hWindow, params))
 		{
 			ContentPackage package(&renderer);
 			StaticMesh* mesh1 = nullptr;
@@ -84,28 +84,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			ID3D11ShaderResourceView* resourceView1 = nullptr;
 			ID3D11Resource* texture2 = nullptr;
 			ID3D11ShaderResourceView* resourceView2 = nullptr;
-			ID3D11VertexShader* vertexShader = nullptr;
-			ID3D11PixelShader* pixelShader = nullptr;
-			BytecodeBlob vertexShaderBytecode;
 
 			// Load resources
 			package.SetVertexLayout(renderer.GetElementLayoutStaticMeshInstanced());
 			package.LoadMesh("ball.DAE", &mesh1);
 			package.LoadMesh("stage.DAE", &mesh2);
-			package.LoadVertexShader("StandardVertex.cso", &vertexShader, &vertexShaderBytecode);
-			package.LoadPixelShader("StandardPixel.cso", &pixelShader);
 			package.LoadTexture2D("albedo.dds", &texture1, &resourceView1);
 			package.LoadTexture2D("albedo2.dds", &texture2, &resourceView2);
 
-			renderer.CreateStaticMeshInputLayout(vertexShaderBytecode);
-			vertexShaderBytecode.Destroy();
-
 			// Create a material
-			Material* material1 = new Material;
-			CreateStandardMaterial(vertexShader, pixelShader, resourceView1, false, material1);
+			MaterialData* material1 = new MaterialData;
+			CreateStandardMaterial(resourceView1, false, material1);
 			package.SetMaterial("Material1", material1);
-			Material* material2 = new Material;
-			CreateStandardMaterial(vertexShader, pixelShader, resourceView2, false, material2);
+			MaterialData* material2 = new MaterialData;
+			CreateStandardMaterial(resourceView2, false, material2);
 			package.SetMaterial("Material2", material2);
 
 			// Create the scene

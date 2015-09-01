@@ -28,10 +28,16 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="StandardPixel.hlsl">
+    <FxCompile Include="StaticMeshInstancedPixel.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="StandardVertex.hlsl">
+    <FxCompile Include="StaticMeshInstancedVertex.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TerrainPatchVertex.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TerrainPatchPixel.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

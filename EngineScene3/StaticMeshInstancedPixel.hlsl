@@ -3,9 +3,9 @@
 sampler TextureSampler : register(s0);
 texture2D Albedo : register(t0);
 
-PSOutputDeferred main(VSOutputStandard input)
+PSOutputForward main(VSOutputStandard input)
 {
-	PSOutputDeferred output;
+	PSOutputForward output;
 
 	output.albedo = Albedo.Sample(TextureSampler, input.uv);
 

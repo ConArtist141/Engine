@@ -6,7 +6,7 @@ cbuffer Constants : register(b0)
 	matrix Projection;
 };
 
-VSOutputStandard main(VSInputStandard input)
+VSOutputStandard main(VSInputStaticMeshInstanced input)
 {
 	VSOutputStandard output;
 	output.position = mul(Projection, mul(View, mul(input.world, float4(input.position, 1.0))));

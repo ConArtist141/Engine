@@ -3,7 +3,7 @@
 #include "StaticMesh.h"
 #include "Renderer.h"
 #include "DDSTextureLoader.h"
-#include "Material.h"
+#include "MaterialData.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -488,7 +488,7 @@ bool ContentPackage::LoadPixelShader(const std::string& contentLocation, ID3D11P
 	return true;
 }
 
-void ContentPackage::SetMaterial(const std::string& contentName, Material* material)
+void ContentPackage::SetMaterial(const std::string& contentName, MaterialData* material)
 {
 #ifdef _DEBUG
 	auto it = materials.find(contentName);
@@ -499,7 +499,7 @@ void ContentPackage::SetMaterial(const std::string& contentName, Material* mater
 	materials[contentName] = material;
 }
 
-bool ContentPackage::GetMaterial(const std::string& contentName, Material** material)
+bool ContentPackage::GetMaterial(const std::string& contentName, MaterialData** material)
 {
 	auto it = materials.find(contentName);
 	if (it != materials.end())

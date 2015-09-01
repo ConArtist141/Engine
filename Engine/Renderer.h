@@ -13,6 +13,10 @@
 #define BLIT_VERTEX_COUNT 4
 #define DEFAULT_INSTANCE_CACHE_SIZE 256
 
+#define STATIC_MESH_INSTANCED_VERTEX_SHADER_LOCATION "StaticMeshInstancedVertex.cso"
+#define STATIC_MESH_INSTANCED_PIXEL_SHADER_LOCATION "StaticMeshInstancedPixel.cso"
+#define TERRAIN_PATCH_VERTEX_SHADER_LOCATION "TerrainPatchVertex.cso"
+#define TERRAIN_PATCH_PIXEL_SHADER_LOCATION "TerrainPatchPixel.cso"
 #define BLIT_VERTEX_SHADER_LOCATION "CompositeVertex.cso"
 #define BLIT_PIXEL_SHADER_LOCATION "CompositePixel.cso"
 
@@ -24,8 +28,9 @@ class ContentPackage;
 
 enum RenderPassType
 {
-	RENDER_PASS_TYPE_DEFERRED = 0,
-	RENDER_PASS_TYPE_SHADOW_MAP = 1
+	RENDER_PASS_TYPE_FORWARD,
+	RENDER_PASS_TYPE_DEFERRED,
+	RENDER_PASS_TYPE_SHADOW_MAP
 };
 
 enum RenderTargetIndex
@@ -53,6 +58,12 @@ public:
 	inline void Clear();
 };
 
+struct NodeCollection
+{
+	std::vector<SceneNode*> InstancedStaticMeshes;
+	std::vector<SceneNode*> TerrainPatches;
+};
+
 class Renderer
 {
 public:
@@ -61,9 +72,6 @@ public:
 	void RenderFrame(SceneNode* sceneRoot, ICamera* camera);
 	void OnResize();
 	void Destroy();
-
-	bool CreateStaticMeshInputLayout(const std::string& vertexShaderFile);
-	bool CreateStaticMeshInputLayout(BytecodeBlob& vertexShaderBytecode);
 
 	inline void SetMoveSizeEntered(const bool value);
 
@@ -81,10 +89,8 @@ public:
 	Renderer();
 
 protected:
-	void CollectVisibleStaticMeshes(RegionNode* node, const Frustum& cameraFrustum, 
-		std::vector<SceneNode*>& meshes);
-	void CollectVisibleStaticMeshes(SceneNode* node, const Frustum& cameraFrustum, 
-		std::vector<SceneNode*>& meshes);
+	void CollectVisibleNodes(RegionNode* node, const Frustum& cameraFrustum, NodeCollection& nodes);
+	void CollectVisibleNodes(SceneNode* node, const Frustum& cameraFrustum, NodeCollection& nodes);
 
 	virtual bool InitWindow(const HWND hWindow, const RenderParams& params);
 	virtual bool InitRenderTarget();
@@ -96,6 +102,9 @@ protected:
 		D3D11_VIEWPORT& viewport, ID3D11RenderTargetView** renderTargets, const size_t renderTargetsCount,
 		ID3D11DepthStencilView* depthStencilView);
 
+	virtual void RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera, NodeCollection& nodes);
+	virtual void RenderTerrainPatches(SceneNode* sceneRoot, ICamera* camera, NodeCollection& nodes);
+
 	virtual void DestroyRenderTarget();
 	virtual void DestroyDeferredTargets();
 
@@ -106,8 +115,6 @@ private:
 	int frameCount;
 	RenderParams renderParameters;
 
-	ID3D11InputLayout* staticMeshInputLayout;
-	ID3D11InputLayout* blitInputLayout;
 	IDXGISwapChain* swapChain;
 	ID3D11Device* device;
 	ID3D11DeviceContext* deviceContext;
@@ -118,9 +125,14 @@ private:
 	std::vector<ID3D11ShaderResourceView*> deferredShaderResourceClear;
 	std::vector<ID3D11RenderTargetView*> deferredRenderTargets;
 
-	ID3D11Buffer* blitVertexBuffer;
-	ID3D11VertexShader* blitVertexShader;
-	ID3D11PixelShader* blitPixelShader;
+	ID3D11Buffer* vertexBufferBlit;
+
+	ID3D11VertexShader* vertexShaderBlit;
+	ID3D11VertexShader* vertexShaderStaticMeshInstanced;
+	ID3D11VertexShader* vertexShaderTerrainPatch;
+	ID3D11PixelShader* pixelShaderBlit;
+	ID3D11PixelShader* pixelShaderStaticMeshInstanced;
+	ID3D11PixelShader* pixelShaderTerrainPatch;
 
 	ID3D11DepthStencilView* defaultDepthStencilView;
 	ID3D11Texture2D* depthStencilTexture;
@@ -134,6 +146,10 @@ private:
 	InputElementLayout elementLayoutStaticMeshInstanced;
 	InputElementLayout elementLayoutBlit;
 	InputElementLayout elementLayoutTerrainPatch;
+
+	ID3D11InputLayout* inputLayoutStaticMeshInstanced;
+	ID3D11InputLayout* inputLayoutBlit;
+	ID3D11InputLayout* inputLayoutTerrainPatch;
 
 	ContentPackage* internalContent;
 };

@@ -6,6 +6,51 @@
 using namespace DirectX;
 using namespace std;
 
+void GetNodeBoundsZone(const SceneNode* node, Bounds* boundsOut)
+{
+	*boundsOut = node->Region.AABB;
+}
+
+void GetNodeBoundsStaticMesh(const SceneNode* node, Bounds* boundsOut)
+{
+	node->Ref.StaticMesh->GetMeshBounds(boundsOut);
+	XMMATRIX matrix = XMLoadFloat4x4(&node->Transform.Global);
+	TransformBounds(matrix, *boundsOut, boundsOut);
+}
+
+void GetNodeBoundsTerrainPatch(const SceneNode* node, Bounds* boundsOut)
+{
+	node->Ref.TerrainPatch->GetBounds(boundsOut);
+	XMMATRIX matrix = XMLoadFloat4x4(&node->Transform.Global);
+	TransformBounds(matrix, *boundsOut, boundsOut);
+}
+
+void GetNodeBoundsEndMarker(const SceneNode* node, Bounds* boundsOut)
+{
+}
+
+SceneNodeFunctionTableEntry SceneNodeFunctionTable[NODE_TYPE_END_ENUM + 1] =
+{
+	{ nullptr }, // NODE_TYPE_EMPTY
+	{ &GetNodeBoundsZone }, // NODE_TYPE_ZONE
+	{ &GetNodeBoundsStaticMesh }, // NODE_TYPE_STATIC_MESH
+	{ &GetNodeBoundsTerrainPatch }, // NODE_TYPE_TERRAIN_PATCH
+	{ nullptr }, // NODE_TYPE_LIGHT
+
+	{ &GetNodeBoundsEndMarker } // End marker
+};
+
+#ifdef _DEBUG
+struct DebugFunctionTableCheck
+{
+	DebugFunctionTableCheck()
+	{
+		assert(SceneNodeFunctionTable[NODE_TYPE_END_ENUM].GetNodeBounds == &GetNodeBoundsEndMarker);
+	}
+};
+DebugFunctionTableCheck FunctionTableCheck;
+#endif
+
 void TransformBounds(const XMMATRIX& matrix, const Bounds& bounds, Bounds* boundsOut)
 {
 	XMVECTOR vecs[8] =
@@ -74,27 +119,16 @@ void CollectZoneVolumeHierachyLeaves(SceneNode* node, vector<SceneNode*>& leaves
 
 void GetVolumeLeafBounds(SceneNode* node, Bounds* boundsOut)
 {
-	if (node->IsStaticMesh())
-	{
-		node->Ref.StaticMesh->GetMeshBounds(boundsOut);
-		XMMATRIX matrix = XMLoadFloat4x4(&node->Transform.Global);
-		TransformBounds(matrix, *boundsOut, boundsOut);
-	}
-	else if (node->IsZone())
-		*boundsOut = node->Region.AABB;
+	auto getBoundsFunc = SceneNodeFunctionTable[node->Type].GetNodeBounds;
+
+	if (getBoundsFunc != nullptr)
+		getBoundsFunc(node, boundsOut);
 	else
 	{
 		OutputDebugString("Invalid leaf type!\n");
 		assert(1);
 	}
 }
-
-enum MajorAxis
-{
-	MAJOR_AXIS_X,
-	MAJOR_AXIS_Y,
-	MAJOR_AXIS_Z
-};
 
 void CreateHierarchyFromBlob(vector<RegionNode*> regions, RegionNode* baseRegion)
 {
@@ -345,10 +379,10 @@ void DestroySceneGraph(SceneNode* sceneNode)
 	delete sceneNode;
 }
 
-SceneNode* CreateStaticMeshNode(StaticMesh* mesh, Material* material, const XMFLOAT4X4& transform)
+SceneNode* CreateStaticMeshNode(StaticMesh* mesh, MaterialData* material, const XMFLOAT4X4& transform)
 {
 	auto node = new SceneNode;
-	node->Material = material;
+	node->MaterialData = material;
 	node->Ref.StaticMesh = mesh;
 	node->Transform.Local = transform;
 	node->Type = NODE_TYPE_STATIC_MESH;
@@ -359,10 +393,21 @@ SceneNode* CreateStaticMeshNode(StaticMesh* mesh, Material* material, const XMFL
 SceneNode* CreateLightNode(LightType type, LightData* data)
 {
 	auto node = new SceneNode;
-	node->Material = nullptr;
+	node->MaterialData = nullptr;
 	node->Ref.LightData = data;
 	XMStoreFloat4x4(&node->Transform.Local, XMMatrixIdentity());
 	node->Type = NODE_TYPE_LIGHT;
+
+	return node;
+}
+
+SceneNode * CreateTerrainPatchNode(TerrainPatch* terrainPatch)
+{
+	auto node = new SceneNode;
+	node->MaterialData = nullptr;
+	node->Ref.TerrainPatch = terrainPatch;
+	XMStoreFloat4x4(&node->Transform.Local, XMMatrixIdentity());
+	node->Type = NODE_TYPE_TERRAIN_PATCH;
 
 	return node;
 }
