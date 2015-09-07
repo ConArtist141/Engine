@@ -135,7 +135,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			}
 		
 			XMStoreFloat4x4(&transform, XMMatrixIdentity());
-			scene->Children.push_back(CreateStaticMeshInstancedNode(mesh2, material2, transform));
+			scene->Children.push_back(CreateStaticMeshNode(mesh2, material2, transform));
 			scene->Children.push_back(CreateTerrainPatchNode(&terrainPatch, transform));
 
 			// Update the transforms of the scene

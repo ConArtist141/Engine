@@ -725,7 +725,7 @@ void Renderer::RenderStaticMeshes(vector<SceneNode*>::iterator& begin, vector<Sc
 	deviceContext->PSSetSamplers(0, 1, &samplerStateLinearStaticMesh);
 
 	ID3D11Buffer* vertexShaderConstantBuffers[] = { bufferCameraConstants, bufferStaticMeshInstanceConstants };
-	deviceContext->VSSetConstantBuffers(0, 2, &bufferCameraConstants);
+	deviceContext->VSSetConstantBuffers(0, 2, vertexShaderConstantBuffers);
 
 	D3D11_MAPPED_SUBRESOURCE mappedSubRes;
 
@@ -762,7 +762,7 @@ void Renderer::RenderStaticMeshes(vector<SceneNode*>::iterator& begin, vector<Sc
 			for (; it != endMeshIt; ++it)
 			{
 				deviceContext->Map(bufferStaticMeshInstanceConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubRes);
-				memcpy(mappedSubRes.pData, &(*it)->Transform.Global, sizeof(XMMATRIX));
+				memcpy(mappedSubRes.pData, &(*it)->Transform.Global, sizeof((*it)->Transform.Global));
 				deviceContext->Unmap(bufferStaticMeshInstanceConstants, 0);
 
 				deviceContext->DrawIndexed(currentMesh->GetIndexCount(), 0, 0);
@@ -862,7 +862,7 @@ void Renderer::RenderTerrainPatches(vector<SceneNode*>::iterator& begin, vector<
 	deviceContext->PSSetSamplers(0, 1, &samplerStateLinearStaticMesh);
 
 	ID3D11Buffer* vertexShaderConstantBuffers[] = { bufferCameraConstants, bufferTerrainPatchInstanceConstants };
-	deviceContext->VSSetConstantBuffers(0, 2, &bufferCameraConstants);
+	deviceContext->VSSetConstantBuffers(0, 2, vertexShaderConstantBuffers);
 
 	D3D11_MAPPED_SUBRESOURCE mappedSubRes;
 
@@ -878,7 +878,7 @@ void Renderer::RenderTerrainPatches(vector<SceneNode*>::iterator& begin, vector<
 		deviceContext->PSSetShaderResources(0, 1, &terrainNode->Ref.TerrainPatch->MaterialData.Albedo);
 
 		deviceContext->Map(bufferTerrainPatchInstanceConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubRes);
-		memcpy(mappedSubRes.pData, &terrainNode->Transform.Global, sizeof(XMMATRIX));
+		memcpy(mappedSubRes.pData, &terrainNode->Transform.Global, sizeof(terrainNode->Transform.Global));
 		deviceContext->Unmap(bufferTerrainPatchInstanceConstants, 0);
 
 		deviceContext->DrawIndexed(terrainNode->Ref.TerrainPatch->MeshData.IndexCount, 0, 0);
