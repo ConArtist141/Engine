@@ -4,6 +4,7 @@
 #include "Renderer.h"
 #include "DDSTextureLoader.h"
 #include "MaterialData.h"
+#include "GraphicsDebug.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -351,6 +352,17 @@ bool ContentPackage::LoadMesh(const std::string& contentLocation, StaticMesh** m
 
 	*meshOut = new StaticMesh(vertexBuffer, indexBuffer, indexCount, 0, bounds, indexFormat);
 	staticMeshes[contentLocation] = *meshOut;
+
+#if defined(ENABLE_DIRECT3D_DEBUG) && defined(ENABLE_NAMED_OBJECTS)
+	stringstream strstreamVert;
+	strstreamVert << contentLocation << " : Vertex Buffer";
+	SetDebugObjectName(vertexBuffer, strstreamVert.str());
+	
+	stringstream strstreamIndex;
+	strstreamIndex << contentLocation << " : Index Buffer";
+	SetDebugObjectName(indexBuffer, strstreamIndex.str());
+#endif
+
 	return true;
 }
 

@@ -10,18 +10,8 @@
 
 class StaticMesh
 {
-protected:
-	ID3D11Buffer* vertexBuffer;
-	ID3D11Buffer* indexBuffer;
-
-	size_t indexCount;
-	size_t indexOffset;
-
-	Bounds meshBounds;
-	DXGI_FORMAT indexFormat;
-
 public:
-	StaticMesh(ID3D11Buffer* vertexBuffer, ID3D11Buffer* indexBuffer, 
+	StaticMesh(ID3D11Buffer* vertexBuffer, ID3D11Buffer* indexBuffer,
 		size_t indexCount, size_t indexOffset, const Bounds& bounds,
 		const DXGI_FORMAT indexFormat);
 
@@ -33,6 +23,16 @@ public:
 	inline void GetMeshBounds(Bounds* boundsOut) const;
 
 	void Destroy();
+
+protected:
+	ID3D11Buffer* vertexBuffer;
+	ID3D11Buffer* indexBuffer;
+
+	size_t indexCount;
+	size_t indexOffset;
+
+	Bounds meshBounds;
+	DXGI_FORMAT indexFormat;
 };
 
 inline ID3D11Buffer* StaticMesh::GetVertexBuffer() const		

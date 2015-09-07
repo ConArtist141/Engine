@@ -50,7 +50,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>ENABLE_DIRECT3D_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_DIRECT3D_DEBUG;ENABLE_NAMED_OBJECTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -79,6 +79,7 @@
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="ContentPackage.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="GraphicsDebug.h" />
     <ClInclude Include="InputElementDesc.h" />
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="MaterialData.h" />
@@ -108,14 +109,19 @@
     <None Include="ShaderHeader.hlsli" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="StaticMeshInstancedPixel.hlsl">
+    <FxCompile Include="StaticMeshPixel.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="StaticMeshInstancedVertex.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
     </FxCompile>
+    <FxCompile Include="StaticMeshVertex.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="TerrainPatchPixel.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="TerrainPatchVertex.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>

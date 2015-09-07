@@ -130,12 +130,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 				for (int j = -2; j <= 2; ++j)
 				{
 					XMStoreFloat4x4(&transform, XMMatrixTranslation(3.0f * i, 2.0f, 3.0f * j));
-					scene->Children.push_back(CreateStaticMeshNode(mesh1, material1, transform));
+					scene->Children.push_back(CreateStaticMeshInstancedNode(mesh1, material1, transform));
 				}
 			}
 		
 			XMStoreFloat4x4(&transform, XMMatrixIdentity());
-			scene->Children.push_back(CreateStaticMeshNode(mesh2, material2, transform));
+			scene->Children.push_back(CreateStaticMeshInstancedNode(mesh2, material2, transform));
 			scene->Children.push_back(CreateTerrainPatchNode(&terrainPatch, transform));
 
 			// Update the transforms of the scene

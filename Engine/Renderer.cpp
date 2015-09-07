@@ -2,6 +2,7 @@
 #include "Camera.h"
 #include "SceneGraph.h"
 #include "ContentPackage.h"
+#include "GraphicsDebug.h"
 
 #include <algorithm>
 #include <fstream>
@@ -12,8 +13,19 @@ using namespace DirectX;
 
 #define CAMERA_CONSTANT_BUFFER_SIZE sizeof(XMMATRIX) * 2
 #define TERRAIN_PATCH_INSTANCE_CONSTANT_BUFFER_SIZE sizeof(XMMATRIX)
+#define STATIC_MESH_INSTANCE_CONSTANT_BUFFER_SIZE sizeof(XMMATRIX)
 
 #define SAFE_RELEASE(x) if (x != nullptr) x->Release();
+
+bool CompareMaterials(SceneNode* n1, SceneNode* n2)
+{
+	return n1->MaterialData < n2->MaterialData;
+}
+
+bool CompareMeshes(SceneNode* n1, SceneNode* n2)
+{
+	return n1->Ref.StaticMesh < n2->Ref.StaticMesh;
+}
 
 template <typename CacheData>
 inline size_t ResizingCache<CacheData>::GetSize() const
@@ -85,13 +97,15 @@ Renderer::Renderer() :
 	wireframeRasterState(nullptr),
 	samplerStateLinearStaticMesh(nullptr),
 	inputLayoutTerrainPatch(nullptr),
+	inputLayoutStaticMesh(nullptr),
 	inputLayoutStaticMeshInstanced(nullptr),
 	pixelShaderBlit(nullptr),
 	vertexShaderBlit(nullptr),
-	pixelShaderStaticMeshInstanced(nullptr),
+	pixelShaderStaticMesh(nullptr),
 	vertexShaderStaticMeshInstanced(nullptr),
 	inputLayoutBlit(nullptr),
 	bufferBlitVertices(nullptr),
+	bufferStaticMeshInstanceConstants(nullptr),
 	bufferCameraConstants(nullptr),
 	bufferTerrainPatchInstanceConstants(nullptr),
 	samplerStateBlit(nullptr),
@@ -136,6 +150,8 @@ bool Renderer::Initialize(HWND hWindow, const RenderParams& params)
 	result = InitConstantBuffers();
 	if (!result)
 		return false;
+
+	NameObjectsDebug();
 
 	return true;
 }
@@ -377,6 +393,21 @@ bool Renderer::InitInternalShaders()
 	bool result;
 	HRESULT hr;
 
+	BytecodeBlob staticMeshBytecode;
+	result = internalContent->LoadVertexShader(STATIC_MESH_VERTEX_SHADER_LOCATION, &vertexShaderStaticMesh,
+		&staticMeshBytecode);
+
+	if (!result)
+		return false;
+
+	hr = device->CreateInputLayout(elementLayoutStaticMesh.Desc, elementLayoutStaticMesh.AttributeCount,
+		staticMeshBytecode.Bytecode, staticMeshBytecode.BytecodeLength,
+		&inputLayoutStaticMesh);
+	staticMeshBytecode.Destroy();
+
+	if (FAILED(hr))
+		return false;
+
 	// Load instanced static mesh shaders
 	BytecodeBlob staticMeshInstancedBytecode;
 	result = internalContent->LoadVertexShader(STATIC_MESH_INSTANCED_VERTEX_SHADER_LOCATION, &vertexShaderStaticMeshInstanced,
@@ -393,7 +424,7 @@ bool Renderer::InitInternalShaders()
 	if (FAILED(hr))
 		return false;
 
-	result = internalContent->LoadPixelShader(STATIC_MESH_INSTANCED_PIXEL_SHADER_LOCATION, &pixelShaderStaticMeshInstanced);
+	result = internalContent->LoadPixelShader(STATIC_MESH_PIXEL_SHADER_LOCATION, &pixelShaderStaticMesh);
 
 	if (!result)
 		return false;
@@ -473,6 +504,13 @@ bool Renderer::InitConstantBuffers()
 	if (FAILED(result))
 		return false;
 
+	D3D11_BUFFER_DESC staticMeshBufferDesc = terrainPatchBufferDesc;
+	staticMeshBufferDesc.ByteWidth = STATIC_MESH_INSTANCE_CONSTANT_BUFFER_SIZE;
+
+	result = device->CreateBuffer(&staticMeshBufferDesc, nullptr, &bufferStaticMeshInstanceConstants);
+	if (FAILED(result))
+		return false;
+
 	return true;
 }
 
@@ -510,6 +548,40 @@ bool Renderer::InitInternalVertexBuffers()
 		return false;
 
 	return true;
+}
+
+void Renderer::NameObjectsDebug()
+{
+#if defined(ENABLE_DIRECT3D_DEBUG) && defined(ENABLE_NAMED_OBJECTS)
+	SetDebugObjectName(backBufferRenderTarget, "Back Buffer Render Target");
+	
+	SetDebugObjectName(bufferBlitVertices, "Blit Vertices Vertex Buffer");
+	SetDebugObjectName(bufferCameraConstants, "Camera Constants Buffer");
+	SetDebugObjectName(bufferStaticMeshInstanceConstants, "Static Mesh Instance Constant Buffer");
+	SetDebugObjectName(bufferTerrainPatchInstanceConstants, "Terrain Patch Instance Constant Buffer");
+
+	SetDebugObjectName(vertexShaderBlit, "Blit Vertex Shader");
+	SetDebugObjectName(vertexShaderStaticMesh, "Static Mesh Vertex Shader");
+	SetDebugObjectName(vertexShaderStaticMeshInstanced, "Instanced Static Mesh Vertex Shader");
+	SetDebugObjectName(vertexShaderTerrainPatch, "Terrain Patch Vertex Shader");
+	SetDebugObjectName(pixelShaderBlit, "Blit Pixel Shader");
+	SetDebugObjectName(pixelShaderStaticMesh, "Static Mesh Pixel Shader");
+	SetDebugObjectName(pixelShaderTerrainPatch, "Terrain Patch Pixel Shader");
+
+	SetDebugObjectName(defaultDepthStencilView, "Default Depth Stencil View");
+	SetDebugObjectName(depthStencilTexture, "Depth Stencil Texture");
+	SetDebugObjectName(forwardPassDepthStencilState, "Forward Pass Depth Stencil State");
+	SetDebugObjectName(forwardPassRasterState, "Forward Pass Raster State");
+	SetDebugObjectName(wireframeRasterState, "Wireframe Raster State");
+	SetDebugObjectName(samplerStateLinearStaticMesh, "Linear Static Mesh Sampler");
+	SetDebugObjectName(samplerStateBlit, "Blit Sampler");
+	SetDebugObjectName(samplerStateTerrainPatch, "Terrain Patch Sampler");
+
+	SetDebugObjectName(inputLayoutStaticMesh, "Static Mesh Layout");
+	SetDebugObjectName(inputLayoutStaticMeshInstanced, "Static Mesh Instanced Layout");
+	SetDebugObjectName(inputLayoutBlit, "Blit Layout");
+	SetDebugObjectName(inputLayoutTerrainPatch, "Terrain Patch Layout");
+#endif
 }
 
 void Renderer::DestroyRenderTarget()
@@ -581,6 +653,8 @@ void Renderer::CollectVisibleNodes(RegionNode* node, const Frustum& cameraFrustu
 		else if (node->LeafData->IsMesh())
 		{
 			if (node->LeafData->IsStaticMesh())
+				nodes.StaticMeshes.push_back(node->LeafData);
+			else if (node->LeafData->IsStaticMeshInstanced())
 				nodes.InstancedStaticMeshes.push_back(node->LeafData);
 			else if (node->LeafData->IsTerrainPatch())
 				nodes.TerrainPatches.push_back(node->LeafData);
@@ -633,76 +707,35 @@ void Renderer::RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPas
 	// Collect all of the visible meshes
 	NodeCollection nodes;
 	CollectVisibleNodes(sceneRoot, cameraFrustum, nodes);
+	SortMeshNodes(nodes, camera);
 
-	// Print total number of visible nodes
-	/* stringstream strStream;
-	strStream << "Total Instanced Static Meshes: " << nodes.InstancedStaticMeshes.size() <<
-		"\nTotal Terrain Patches: " << nodes.TerrainPatches.size() << "\n";
-	OutputDebugString(strStream.str().c_str());*/
-
-	RenderStaticMeshesInstanced(sceneRoot, camera, nodes);
-	RenderTerrainPatches(sceneRoot, camera, nodes);
+	RenderStaticMeshes(nodes.StaticMeshes.begin(), nodes.StaticMeshes.end());
+	RenderStaticMeshesInstanced(nodes.InstancedStaticMeshes.begin(), nodes.InstancedStaticMeshes.end());
+	RenderTerrainPatches(nodes.TerrainPatches.begin(), nodes.TerrainPatches.end());
 }
 
-void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera, NodeCollection& nodes)
+void Renderer::RenderStaticMeshes(vector<SceneNode*>::iterator& begin, vector<SceneNode*>::iterator& end)
 {
-	// Get camera position
-	XMFLOAT3 cameraPosition;
-	camera->GetPosition(&cameraPosition);
-	XMVECTOR cameraPositionVec = XMLoadFloat3(&cameraPosition);
-
 	// Set primitive topology and input layout for static meshes
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	deviceContext->IASetInputLayout(inputLayoutStaticMeshInstanced);
+	deviceContext->IASetInputLayout(inputLayoutStaticMesh);
 
-	auto compareDistance = [&camera, &cameraPositionVec](SceneNode* n1, SceneNode* n2)
-	{
-		float d1;
-		float d2;
-		XMStoreFloat(&d1, XMVector3LengthSq(cameraPositionVec - 0.5f *
-			(XMLoadFloat3(&n1->Region.AABB.Lower) +
-				XMLoadFloat3(&n1->Region.AABB.Upper))));
-		XMStoreFloat(&d2, XMVector3LengthSq(cameraPositionVec - 0.5f *
-			(XMLoadFloat3(&n2->Region.AABB.Lower) +
-				XMLoadFloat3(&n2->Region.AABB.Upper))));
-		return d1 < d2;
-	};
-
-	auto isOpaque = [](SceneNode* n)
-	{
-		return !n->MaterialData->IsTransparent;
-	};
-
-	auto compareMaterials = [](SceneNode* n1, SceneNode* n2)
-	{
-		return n1->MaterialData < n2->MaterialData;
-	};
-
-	auto compareMeshes = [](SceneNode* n1, SceneNode* n2)
-	{
-		return n1->Ref.StaticMesh < n2->Ref.StaticMesh;
-	};
-
-	// Reorder the visible meshes for batching
-	sort(nodes.InstancedStaticMeshes.begin(), nodes.InstancedStaticMeshes.end(), compareDistance);
-	stable_sort(nodes.InstancedStaticMeshes.begin(), nodes.InstancedStaticMeshes.end(), compareMeshes);
-	stable_sort(nodes.InstancedStaticMeshes.begin(), nodes.InstancedStaticMeshes.end(), compareMaterials);
-	stable_partition(nodes.InstancedStaticMeshes.begin(), nodes.InstancedStaticMeshes.end(), isOpaque);
-
-	auto it = nodes.InstancedStaticMeshes.begin();
-	auto endIt = nodes.InstancedStaticMeshes.end();
-
-	// Set material stage parameters
-	deviceContext->VSSetShader(vertexShaderStaticMeshInstanced, nullptr, 0);
-	deviceContext->PSSetShader(pixelShaderStaticMeshInstanced, nullptr, 0);
+	deviceContext->VSSetShader(vertexShaderStaticMesh, nullptr, 0);
+	deviceContext->PSSetShader(pixelShaderStaticMesh, nullptr, 0);
 	deviceContext->PSSetSamplers(0, 1, &samplerStateLinearStaticMesh);
-	deviceContext->VSSetConstantBuffers(0, 1, &bufferCameraConstants);
 
-	while (it != endIt)
+	ID3D11Buffer* vertexShaderConstantBuffers[] = { bufferCameraConstants, bufferStaticMeshInstanceConstants };
+	deviceContext->VSSetConstantBuffers(0, 2, &bufferCameraConstants);
+
+	D3D11_MAPPED_SUBRESOURCE mappedSubRes;
+
+	auto it = begin;
+
+	while (it != end)
 	{
 		// Begin material for this batch
 		auto currentMaterial = (*it)->MaterialData;
-		auto endMaterialIt = upper_bound(it, endIt, *it, compareMaterials);
+		auto endMaterialIt = upper_bound(it, end, *it, CompareMaterials);
 
 		if (currentMaterial->Type == MATERIAL_TYPE_STANDARD)
 		{
@@ -716,7 +749,61 @@ void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera
 		{
 			// Begin mesh for this batch
 			auto currentMesh = (*it)->Ref.StaticMesh;
-			auto endMeshIt = upper_bound(it, endMaterialIt, *it, compareMeshes);
+			auto endMeshIt = upper_bound(it, endMaterialIt, *it, CompareMeshes);
+			auto vertexBuffer = currentMesh->GetVertexBuffer();
+			auto indexBuffer = currentMesh->GetIndexBuffer();
+			UINT stride = elementLayoutStaticMesh.Stride;
+			UINT offset = 0;
+
+			// Bind mesh vertex and index buffers
+			deviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+			deviceContext->IASetIndexBuffer(indexBuffer, currentMesh->GetIndexFormat(), 0);
+
+			for (; it != endMeshIt; ++it)
+			{
+				deviceContext->Map(bufferStaticMeshInstanceConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubRes);
+				memcpy(mappedSubRes.pData, &(*it)->Transform.Global, sizeof(XMMATRIX));
+				deviceContext->Unmap(bufferStaticMeshInstanceConstants, 0);
+
+				deviceContext->DrawIndexed(currentMesh->GetIndexCount(), 0, 0);
+			}
+		}
+	}
+}
+
+void Renderer::RenderStaticMeshesInstanced(vector<SceneNode*>::iterator& begin, vector<SceneNode*>::iterator& end)
+{
+	// Set primitive topology and input layout for static meshes
+	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	deviceContext->IASetInputLayout(inputLayoutStaticMeshInstanced);
+
+	// Set material stage parameters
+	deviceContext->VSSetShader(vertexShaderStaticMeshInstanced, nullptr, 0);
+	deviceContext->PSSetShader(pixelShaderStaticMesh, nullptr, 0);
+	deviceContext->PSSetSamplers(0, 1, &samplerStateLinearStaticMesh);
+	deviceContext->VSSetConstantBuffers(0, 1, &bufferCameraConstants);
+
+	auto it = begin;
+
+	while (it != end)
+	{
+		// Begin material for this batch
+		auto currentMaterial = (*it)->MaterialData;
+		auto endMaterialIt = upper_bound(it, end, *it, CompareMaterials);
+
+		if (currentMaterial->Type == MATERIAL_TYPE_STANDARD)
+		{
+			if (currentMaterial->PixelResourceViews.size() > 0)
+				deviceContext->PSSetShaderResources(0, currentMaterial->PixelResourceViews.size(), currentMaterial->PixelResourceViews.data());
+			if (currentMaterial->PixelConstantBuffers.size() > 0)
+				deviceContext->PSSetConstantBuffers(0, currentMaterial->PixelConstantBuffers.size(), currentMaterial->PixelConstantBuffers.data());
+		}
+
+		while (it != endMaterialIt)
+		{
+			// Begin mesh for this batch
+			auto currentMesh = (*it)->Ref.StaticMesh;
+			auto endMeshIt = upper_bound(it, endMaterialIt, *it, CompareMeshes);
 			auto vertexBuffer = currentMesh->GetVertexBuffer();
 			auto indexBuffer = currentMesh->GetIndexBuffer();
 			UINT stride = elementLayoutStaticMeshInstanced.Stride;
@@ -764,7 +851,7 @@ void Renderer::RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera
 	}
 }
 
-void Renderer::RenderTerrainPatches(SceneNode* sceneRoot, ICamera* camera, NodeCollection& nodes)
+void Renderer::RenderTerrainPatches(vector<SceneNode*>::iterator& begin, vector<SceneNode*>::iterator& end)
 {
 	// Set primitive topology and input layout for static meshes
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -779,8 +866,10 @@ void Renderer::RenderTerrainPatches(SceneNode* sceneRoot, ICamera* camera, NodeC
 
 	D3D11_MAPPED_SUBRESOURCE mappedSubRes;
 
-	for (auto terrainNode : nodes.TerrainPatches)
+	for (auto it = begin; it != end; ++it)
 	{
+		auto terrainNode = *it;
+
 		UINT stride = elementLayoutTerrainPatch.Stride;
 		UINT offset = 0;
 
@@ -794,6 +883,44 @@ void Renderer::RenderTerrainPatches(SceneNode* sceneRoot, ICamera* camera, NodeC
 
 		deviceContext->DrawIndexed(terrainNode->Ref.TerrainPatch->MeshData.IndexCount, 0, 0);
 	}
+}
+
+void Renderer::SortMeshNodes(NodeCollection& nodes, ICamera* camera)
+{
+	// Reorder the visible meshes for batching
+	auto sortStaticMeshCollection = [&camera](vector<SceneNode*>& collection)
+	{
+		// Get camera position
+		XMFLOAT3 cameraPosition;
+		camera->GetPosition(&cameraPosition);
+		XMVECTOR cameraPositionVec = XMLoadFloat3(&cameraPosition);
+
+		auto compareDistance = [&camera, &cameraPositionVec](SceneNode* n1, SceneNode* n2)
+		{
+			float d1;
+			float d2;
+			XMStoreFloat(&d1, XMVector3LengthSq(cameraPositionVec - 0.5f *
+				(XMLoadFloat3(&n1->Region.AABB.Lower) +
+					XMLoadFloat3(&n1->Region.AABB.Upper))));
+			XMStoreFloat(&d2, XMVector3LengthSq(cameraPositionVec - 0.5f *
+				(XMLoadFloat3(&n2->Region.AABB.Lower) +
+					XMLoadFloat3(&n2->Region.AABB.Upper))));
+			return d1 < d2;
+		};
+
+		auto isOpaque = [](SceneNode* n)
+		{
+			return !n->MaterialData->IsTransparent;
+		};
+
+		sort(collection.begin(), collection.end(), compareDistance);
+		stable_sort(collection.begin(), collection.end(), CompareMeshes);
+		stable_sort(collection.begin(), collection.end(), CompareMaterials);
+		stable_partition(collection.begin(), collection.end(), isOpaque);
+	};
+
+	sortStaticMeshCollection(nodes.StaticMeshes);
+	sortStaticMeshCollection(nodes.InstancedStaticMeshes);
 }
 
 void Renderer::RenderFrame(SceneNode* sceneRoot, ICamera* camera)
@@ -856,7 +983,9 @@ void Renderer::Destroy()
 	SAFE_RELEASE(bufferBlitVertices);
 	SAFE_RELEASE(bufferCameraConstants);
 	SAFE_RELEASE(bufferTerrainPatchInstanceConstants);
+	SAFE_RELEASE(bufferStaticMeshInstanceConstants);
 	SAFE_RELEASE(inputLayoutBlit);
+	SAFE_RELEASE(inputLayoutStaticMesh);
 	SAFE_RELEASE(inputLayoutStaticMeshInstanced);
 	SAFE_RELEASE(inputLayoutTerrainPatch);
 	SAFE_RELEASE(samplerStateLinearStaticMesh);

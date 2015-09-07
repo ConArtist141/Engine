@@ -22,6 +22,7 @@ enum NodeType
 	NODE_TYPE_EMPTY,
 	NODE_TYPE_ZONE,
 	NODE_TYPE_STATIC_MESH,
+	NODE_TYPE_STATIC_MESH_INSTANCED,
 	NODE_TYPE_TERRAIN_PATCH,
 	NODE_TYPE_LIGHT,
 	NODE_TYPE_END_ENUM
@@ -100,6 +101,7 @@ public:
 	inline bool IsZone() const;
 	inline bool IsMesh() const;
 	inline bool IsStaticMesh() const;
+	inline bool IsStaticMeshInstanced() const;
 	inline bool IsTerrainPatch() const;
 	inline bool IsLight() const;
 };
@@ -115,6 +117,10 @@ inline bool SceneNode::IsMesh() const
 inline bool SceneNode::IsStaticMesh() const
 {
 	return Type == NODE_TYPE_STATIC_MESH;
+}
+inline bool SceneNode::IsStaticMeshInstanced() const
+{
+	return Type == NODE_TYPE_STATIC_MESH_INSTANCED;
 }
 inline bool SceneNode::IsTerrainPatch() const
 {
@@ -137,6 +143,7 @@ void BuildSceneGraphHierarchy(SceneNode* zone, const bool bRebuildChildrenZones)
 SceneNode* CreateSceneGraph();
 void DestroySceneGraph(SceneNode* sceneNode);
 SceneNode* CreateStaticMeshNode(StaticMesh* mesh, MaterialData* material, const DirectX::XMFLOAT4X4& transform);
+SceneNode* CreateStaticMeshInstancedNode(StaticMesh* mesh, MaterialData* material, const DirectX::XMFLOAT4X4& transform);
 SceneNode* CreateLightNode(LightType type, LightData* data);
 SceneNode* CreateTerrainPatchNode(TerrainPatch* terrainPatch, const DirectX::XMFLOAT4X4& transform);
 

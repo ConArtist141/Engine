@@ -34,6 +34,7 @@ SceneNodeFunctionTableEntry SceneNodeFunctionTable[NODE_TYPE_END_ENUM + 1] =
 	{ nullptr }, // NODE_TYPE_EMPTY
 	{ &GetNodeBoundsZone }, // NODE_TYPE_ZONE
 	{ &GetNodeBoundsStaticMesh }, // NODE_TYPE_STATIC_MESH
+	{ &GetNodeBoundsStaticMesh }, // NODE_TYPE_STATIC_MESH_INSTANCED
 	{ &GetNodeBoundsTerrainPatch }, // NODE_TYPE_TERRAIN_PATCH
 	{ nullptr }, // NODE_TYPE_LIGHT
 
@@ -359,6 +360,14 @@ SceneNode* CreateStaticMeshNode(StaticMesh* mesh, MaterialData* material, const 
 	node->Ref.StaticMesh = mesh;
 	node->Transform.Local = transform;
 	node->Type = NODE_TYPE_STATIC_MESH;
+
+	return node;
+}
+
+SceneNode* CreateStaticMeshInstancedNode(StaticMesh* mesh, MaterialData* material, const DirectX::XMFLOAT4X4& transform)
+{
+	auto node = CreateStaticMeshNode(mesh, material, transform);
+	node->Type = NODE_TYPE_STATIC_MESH_INSTANCED;
 
 	return node;
 }

@@ -1,5 +1,7 @@
 #include "Terrain.h"
 
+#include "GraphicsDebug.h"
+
 #include <limits>
 #include <vector>
 
@@ -94,6 +96,10 @@ TerrainPatchError TerrainPatch::GenerateVertexBuffer(const size_t mipLevel, ID3D
 
 	MeshData.VertexCount = elementCount;
 
+#if defined(ENABLE_DIRECT3D_DEBUG) && defined(ENABLE_NAMED_OBJECTS)
+	SetDebugObjectName(MeshData.VertexBuffer, "Terrain Patch Vertex Buffer");
+#endif
+
 	return TERRAIN_PATCH_ERROR_OK;
 }
 
@@ -157,6 +163,10 @@ TerrainPatchError TerrainPatch::GenerateIndexBuffer(const size_t mipLevel, ID3D1
 		return TERRAIN_PATCH_ERROR_INDEX_BUFFER_CREATION_FAILED;
 
 	MeshData.IndexCount = indices.size();
+
+#if defined(ENABLE_DIRECT3D_DEBUG) && defined(ENABLE_NAMED_OBJECTS)
+	SetDebugObjectName(MeshData.IndexBuffer, "Terrain Patch Index Buffer");
+#endif
 
 	return TERRAIN_PATCH_ERROR_OK;
 }

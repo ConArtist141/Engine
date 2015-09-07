@@ -13,8 +13,9 @@
 #define BLIT_VERTEX_COUNT 4
 #define DEFAULT_INSTANCE_CACHE_SIZE 256
 
+#define STATIC_MESH_VERTEX_SHADER_LOCATION "StaticMeshVertex.cso"
 #define STATIC_MESH_INSTANCED_VERTEX_SHADER_LOCATION "StaticMeshInstancedVertex.cso"
-#define STATIC_MESH_INSTANCED_PIXEL_SHADER_LOCATION "StaticMeshInstancedPixel.cso"
+#define STATIC_MESH_PIXEL_SHADER_LOCATION "StaticMeshPixel.cso"
 #define TERRAIN_PATCH_VERTEX_SHADER_LOCATION "TerrainPatchVertex.cso"
 #define TERRAIN_PATCH_PIXEL_SHADER_LOCATION "TerrainPatchPixel.cso"
 #define BLIT_VERTEX_SHADER_LOCATION "CompositeVertex.cso"
@@ -41,11 +42,6 @@ enum RenderTargetIndex
 template <typename CacheData>
 class ResizingCache
 {
-private:
-	CacheData* cache;
-	size_t cacheReserved;
-	size_t cacheSize;
-
 public:
 	ResizingCache(const size_t reserve);
 	inline ~ResizingCache();
@@ -56,10 +52,16 @@ public:
 	void Reserve(const size_t reserveCount);
 	inline void Push(const CacheData& data);
 	inline void Clear();
+
+private:
+	CacheData* cache;
+	size_t cacheReserved;
+	size_t cacheSize;
 };
 
 struct NodeCollection
 {
+	std::vector<SceneNode*> StaticMeshes;
 	std::vector<SceneNode*> InstancedStaticMeshes;
 	std::vector<SceneNode*> TerrainPatches;
 };
@@ -98,22 +100,26 @@ protected:
 	void CollectVisibleNodes(RegionNode* node, const Frustum& cameraFrustum, NodeCollection& nodes);
 	void CollectVisibleNodes(SceneNode* node, const Frustum& cameraFrustum, NodeCollection& nodes);
 
-	virtual bool InitWindow(const HWND hWindow, const RenderParams& params);
-	virtual bool InitRenderTarget();
-	virtual bool InitRenderObjects();
-	virtual bool InitInternalShaders();
-	virtual bool InitConstantBuffers();
-	virtual bool InitInternalVertexBuffers();
+	bool InitWindow(const HWND hWindow, const RenderParams& params);
+	bool InitRenderTarget();
+	bool InitRenderObjects();
+	bool InitInternalShaders();
+	bool InitConstantBuffers();
+	bool InitInternalVertexBuffers();
 
-	virtual void RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPassType passType,
+	void NameObjectsDebug();
+
+	void RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPassType passType,
 		D3D11_VIEWPORT& viewport, ID3D11RenderTargetView** renderTargets, const size_t renderTargetsCount,
 		ID3D11DepthStencilView* depthStencilView);
 
-	virtual void RenderStaticMeshesInstanced(SceneNode* sceneRoot, ICamera* camera, NodeCollection& nodes);
-	virtual void RenderTerrainPatches(SceneNode* sceneRoot, ICamera* camera, NodeCollection& nodes);
+	void RenderStaticMeshes(std::vector<SceneNode*>::iterator& begin, std::vector<SceneNode*>::iterator& end);
+	void RenderStaticMeshesInstanced(std::vector<SceneNode*>::iterator& begin, std::vector<SceneNode*>::iterator& end);
+	void RenderTerrainPatches(std::vector<SceneNode*>::iterator& begin, std::vector<SceneNode*>::iterator& end);
+	void SortMeshNodes(NodeCollection& nodes, ICamera* camera);
 
-	virtual void DestroyRenderTarget();
-	virtual void DestroyDeferredTargets();
+	void DestroyRenderTarget();
+	void DestroyDeferredTargets();
 
 private:
 	ResizingCache<DirectX::XMFLOAT4X4> instanceCache;
@@ -135,13 +141,15 @@ private:
 	ID3D11Buffer* bufferBlitVertices;
 
 	ID3D11Buffer* bufferCameraConstants;
+	ID3D11Buffer* bufferStaticMeshInstanceConstants;
 	ID3D11Buffer* bufferTerrainPatchInstanceConstants;
 
 	ID3D11VertexShader* vertexShaderBlit;
+	ID3D11VertexShader* vertexShaderStaticMesh;
 	ID3D11VertexShader* vertexShaderStaticMeshInstanced;
 	ID3D11VertexShader* vertexShaderTerrainPatch;
-	ID3D11PixelShader* pixelShaderBlit;
-	ID3D11PixelShader* pixelShaderStaticMeshInstanced;
+	ID3D11PixelShader* pixelShaderBlit; 
+	ID3D11PixelShader* pixelShaderStaticMesh;
 	ID3D11PixelShader* pixelShaderTerrainPatch;
 
 	ID3D11DepthStencilView* defaultDepthStencilView;
@@ -159,6 +167,7 @@ private:
 	InputElementLayout elementLayoutBlit;
 	InputElementLayout elementLayoutTerrainPatch;
 
+	ID3D11InputLayout* inputLayoutStaticMesh;
 	ID3D11InputLayout* inputLayoutStaticMeshInstanced;
 	ID3D11InputLayout* inputLayoutBlit;
 	ID3D11InputLayout* inputLayoutTerrainPatch;

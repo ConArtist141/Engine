@@ -57,6 +57,9 @@
     <ClInclude Include="MaterialData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GraphicsDebug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp">
@@ -106,13 +109,16 @@
     <FxCompile Include="StaticMeshInstancedVertex.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="TerrainPatchPixel.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="TerrainPatchVertex.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="StaticMeshInstancedPixel.hlsl">
+    <FxCompile Include="StaticMeshVertex.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="StaticMeshPixel.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TerrainPatchPixel.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
