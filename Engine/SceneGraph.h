@@ -74,7 +74,8 @@ struct LightData
 struct ZoneData
 {
 	std::string Name;
-	SceneNode* ZoneDirectionalLight;
+	SceneNode* DirectionalLight;
+	std::vector<SceneNode*> OmniLights;
 };
 
 union NodeRef
@@ -124,14 +125,14 @@ inline bool SceneNode::IsLight() const
 	return Type == NODE_TYPE_LIGHT;
 }
 
-void TransformBounds(const DirectX::XMMATRIX& matrix, const Bounds& bounds, Bounds* boundsOut);
 void UpdateTransforms(SceneNode* node, const DirectX::XMMATRIX& transform);
-void CollectZoneVolumeHierachyLeaves(SceneNode* node, std::vector<SceneNode*>& leaves);
+void CollectZoneLeaves(SceneNode* node, std::vector<SceneNode*>* leaves,
+	std::vector<SceneNode*>* omniLights, SceneNode** directionalLight);
 void GetVolumeLeafBounds(SceneNode* node, Bounds* boundsOut);
 void CreateHierarchyFromBlob(std::vector<RegionNode*> regions, RegionNode* baseRegion);
 void DestroyHierarchyRegion(RegionNode* node, const bool bDestroyChildrenHierarchies);
-void DestroyBoundingVolumeHierarchy(SceneNode* zone, const bool bDestroyChildrenHierarchies);
-void BuildBoundingVolumeHierarchy(SceneNode* zone, const bool bRebuildChildrenZones);
+void DestroySceneGraphHierarchy(SceneNode* zone, const bool bDestroyChildrenHierarchies);
+void BuildSceneGraphHierarchy(SceneNode* zone, const bool bRebuildChildrenZones);
 
 SceneNode* CreateSceneGraph();
 void DestroySceneGraph(SceneNode* sceneNode);

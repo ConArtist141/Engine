@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Shaders">
-      <UniqueIdentifier>{2fded047-aa54-4e6e-9099-c781baf7c071}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Content">
       <UniqueIdentifier>{831fcde1-5157-4257-81b7-800fd533cb9f}</UniqueIdentifier>
     </Filter>

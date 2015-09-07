@@ -51,48 +51,6 @@ struct DebugFunctionTableCheck
 DebugFunctionTableCheck FunctionTableCheck;
 #endif
 
-void TransformBounds(const XMMATRIX& matrix, const Bounds& bounds, Bounds* boundsOut)
-{
-	XMVECTOR vecs[8] =
-	{
-		XMVectorSet(bounds.Lower.x, bounds.Lower.y, bounds.Lower.z, 1.0f),
-		XMVectorSet(bounds.Lower.x, bounds.Lower.y, bounds.Upper.z, 1.0f),
-		XMVectorSet(bounds.Lower.x, bounds.Upper.y, bounds.Lower.z, 1.0f),
-		XMVectorSet(bounds.Lower.x, bounds.Upper.y, bounds.Upper.z, 1.0f),
-		XMVectorSet(bounds.Upper.x, bounds.Lower.y, bounds.Lower.z, 1.0f),
-		XMVectorSet(bounds.Upper.x, bounds.Lower.y, bounds.Upper.z, 1.0f),
-		XMVectorSet(bounds.Upper.x, bounds.Upper.y, bounds.Lower.z, 1.0f),
-		XMVectorSet(bounds.Upper.x, bounds.Upper.y, bounds.Upper.z, 1.0f)
-	};
-
-	auto infinity = numeric_limits<float>::infinity();
-	boundsOut->Lower = { infinity, infinity, infinity };
-	boundsOut->Upper = { -infinity, -infinity, -infinity };
-
-	for (size_t i = 0; i < 8; ++i)
-	{
-		vecs[i] = XMVector4Transform(vecs[i], matrix);
-
-		auto x = XMVectorGetX(vecs[i]);
-		auto y = XMVectorGetY(vecs[i]);
-		auto z = XMVectorGetZ(vecs[i]);
-
-		if (boundsOut->Lower.x > x)
-			boundsOut->Lower.x = x;
-		if (boundsOut->Lower.y > y)
-			boundsOut->Lower.y = y;
-		if (boundsOut->Lower.z > z)
-			boundsOut->Lower.z = z;
-
-		if (boundsOut->Upper.x < x)
-			boundsOut->Upper.x = x;
-		if (boundsOut->Upper.y < y)
-			boundsOut->Upper.y = y;
-		if (boundsOut->Upper.z < z)
-			boundsOut->Upper.z = z;
-	}
-}
-
 void UpdateTransforms(SceneNode* node, const XMMATRIX& transform)
 {
 	XMMATRIX matrix = XMLoadFloat4x4(&node->Transform.Local);
@@ -103,15 +61,31 @@ void UpdateTransforms(SceneNode* node, const XMMATRIX& transform)
 		UpdateTransforms(child, matrix);
 }
 
-void CollectZoneVolumeHierachyLeaves(SceneNode* node, vector<SceneNode*>& leaves)
+void CollectZoneLeaves(SceneNode* node, std::vector<SceneNode*>* leaves, 
+	std::vector<SceneNode*>* omniLights, SceneNode** directionalLight)
 {
+	directionalLight = nullptr;
+
 	for (auto child : node->Children)
 	{
 		// Collect static meshes and zones.
 		if (child->IsMesh())
-			leaves.push_back(child);
+			leaves->push_back(child);
 		else if (child->IsZone())
-			leaves.push_back(child);
+			leaves->push_back(child);
+		else if (child->IsLight())
+		{
+			switch (child->Ref.LightData->Type)
+			{
+			case LIGHT_TYPE_DIRECTIONAL:
+				*directionalLight = child;
+				break;
+
+			case LIGHT_TYPE_OMNI:
+				omniLights->push_back(child);
+				break;
+			}
+		}
 	}
 }
 
@@ -273,7 +247,7 @@ void CreateHierarchyFromBlob(vector<RegionNode*> regions, RegionNode* baseRegion
 void DestroyHierarchyRegion(RegionNode* node, const bool bDestroyChildrenHierarchies)
 {
 	if (bDestroyChildrenHierarchies && node->LeafData != nullptr && node->LeafData->IsZone())
-		DestroyBoundingVolumeHierarchy(node->LeafData, true);
+		DestroySceneGraphHierarchy(node->LeafData, true);
 	else
 	{
 		if (node->Node1 != nullptr)
@@ -287,7 +261,7 @@ void DestroyHierarchyRegion(RegionNode* node, const bool bDestroyChildrenHierarc
 	delete node;
 }
 
-void DestroyBoundingVolumeHierarchy(SceneNode* zone, const bool bDestroyChildrenHierarchies)
+void DestroySceneGraphHierarchy(SceneNode* zone, const bool bDestroyChildrenHierarchies)
 {
 	if (zone->IsZone())
 	{
@@ -311,7 +285,7 @@ void DestroyBoundingVolumeHierarchy(SceneNode* zone, const bool bDestroyChildren
 	}
 }
 
-void BuildBoundingVolumeHierarchy(SceneNode* zone, const bool bRebuildChildrenZones)
+void BuildSceneGraphHierarchy(SceneNode* zone, const bool bRebuildChildrenZones)
 {
 	if (!zone->IsZone())
 	{
@@ -319,10 +293,11 @@ void BuildBoundingVolumeHierarchy(SceneNode* zone, const bool bRebuildChildrenZo
 		return;
 	}
 
-	DestroyBoundingVolumeHierarchy(zone, bRebuildChildrenZones);
+	DestroySceneGraphHierarchy(zone, bRebuildChildrenZones);
 
+	ZoneData* zoneData = zone->Ref.ZoneData;
 	vector<SceneNode*> leaves;
-	CollectZoneVolumeHierachyLeaves(zone, leaves);
+	CollectZoneLeaves(zone, &leaves, &zoneData->OmniLights, &zoneData->DirectionalLight);
 
 	vector<RegionNode*> leafRegions;
 	for (auto leaf : leaves)
@@ -331,7 +306,7 @@ void BuildBoundingVolumeHierarchy(SceneNode* zone, const bool bRebuildChildrenZo
 
 		// Rebuild children
 		if (bRebuildChildrenZones && leaf->IsZone())
-			BuildBoundingVolumeHierarchy(leaf, true);
+			BuildSceneGraphHierarchy(leaf, true);
 
 		// Update region
 		GetVolumeLeafBounds(leaf, &bounds);
@@ -369,7 +344,7 @@ SceneNode* CreateSceneGraph()
 void DestroySceneGraph(SceneNode* sceneNode)
 {
 	if (sceneNode->IsZone())
-		DestroyBoundingVolumeHierarchy(sceneNode, true);
+		DestroySceneGraphHierarchy(sceneNode, true);
 
 	for (auto child : sceneNode->Children)
 		DestroySceneGraph(child);

@@ -32,4 +32,6 @@ void ConstructFrustum(const float fieldOfView, const float farPlane, const float
 	const DirectX::XMFLOAT3& cameraPosition, const DirectX::XMFLOAT3& cameraTarget,
 	const DirectX::XMFLOAT3& cameraUp, const float aspectRatio, Frustum* frustumOut);
 
+void TransformBounds(const DirectX::XMMATRIX& matrix, const Bounds& bounds, Bounds* boundsOut);
+
 #endif

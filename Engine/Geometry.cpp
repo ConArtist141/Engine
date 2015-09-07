@@ -1,5 +1,8 @@
 #include "Geometry.h"
 
+#include <limits>
+
+using namespace std;
 using namespace DirectX;
 
 inline void ConstructPlaneFromNormalAndPoint(const DirectX::XMVECTOR& point,
@@ -104,4 +107,45 @@ void ConstructFrustum(const float fieldOfView, const float farPlane, const float
 
 	// Right plane
 	ConstructPlaneFromPoints(farBottomRight, farTopRight, nearBottomRight, &frustumOut->Planes[5]);
+}
+
+void TransformBounds(const XMMATRIX& matrix, const Bounds& bounds, Bounds* boundsOut)
+{
+	XMVECTOR vecs[8] =
+	{
+		XMVectorSet(bounds.Lower.x, bounds.Lower.y, bounds.Lower.z, 1.0f),
+		XMVectorSet(bounds.Lower.x, bounds.Lower.y, bounds.Upper.z, 1.0f),
+		XMVectorSet(bounds.Lower.x, bounds.Upper.y, bounds.Lower.z, 1.0f),
+		XMVectorSet(bounds.Lower.x, bounds.Upper.y, bounds.Upper.z, 1.0f),
+		XMVectorSet(bounds.Upper.x, bounds.Lower.y, bounds.Lower.z, 1.0f),
+		XMVectorSet(bounds.Upper.x, bounds.Lower.y, bounds.Upper.z, 1.0f),
+		XMVectorSet(bounds.Upper.x, bounds.Upper.y, bounds.Lower.z, 1.0f),
+		XMVectorSet(bounds.Upper.x, bounds.Upper.y, bounds.Upper.z, 1.0f)
+	};
+
+	auto infinity = numeric_limits<float>::infinity();
+	boundsOut->Lower = { infinity, infinity, infinity };
+	boundsOut->Upper = { -infinity, -infinity, -infinity };
+
+	XMFLOAT3 vecResult;
+
+	for (size_t i = 0; i < 8; ++i)
+	{
+		vecs[i] = XMVector4Transform(vecs[i], matrix);
+		XMStoreFloat3(&vecResult, vecs[i]);
+	
+		if (boundsOut->Lower.x > vecResult.x)
+			boundsOut->Lower.x = vecResult.x;
+		if (boundsOut->Lower.y > vecResult.y)
+			boundsOut->Lower.y = vecResult.y;
+		if (boundsOut->Lower.z > vecResult.z)
+			boundsOut->Lower.z = vecResult.z;
+
+		if (boundsOut->Upper.x < vecResult.x)
+			boundsOut->Upper.x = vecResult.x;
+		if (boundsOut->Upper.y < vecResult.y)
+			boundsOut->Upper.y = vecResult.y;
+		if (boundsOut->Upper.z < vecResult.z)
+			boundsOut->Upper.z = vecResult.z;
+	}
 }

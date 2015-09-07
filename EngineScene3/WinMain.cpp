@@ -141,7 +141,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			// Update the transforms of the scene
 			UpdateTransforms(scene, XMMatrixIdentity());
 			// Build the bounding volume hierarchy for culling objects
-			BuildBoundingVolumeHierarchy(scene, true);
+			BuildSceneGraphHierarchy(scene, true);
 
 			// Show the window now
 			PresentWindow(hWindow, false);
