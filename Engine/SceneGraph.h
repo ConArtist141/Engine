@@ -75,8 +75,7 @@ struct LightData
 struct ZoneData
 {
 	std::string Name;
-	SceneNode* DirectionalLight;
-	std::vector<SceneNode*> OmniLights;
+	std::vector<SceneNode*> Lights;
 };
 
 union NodeRef

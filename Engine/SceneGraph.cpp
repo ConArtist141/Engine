@@ -62,10 +62,9 @@ void UpdateTransforms(SceneNode* node, const XMMATRIX& transform)
 		UpdateTransforms(child, matrix);
 }
 
-void CollectZoneLeaves(SceneNode* node, std::vector<SceneNode*>* leaves, 
-	std::vector<SceneNode*>* omniLights, SceneNode** directionalLight)
+void CollectZoneLeaves(SceneNode* node, std::vector<SceneNode*>* leaves, std::vector<SceneNode*>* lights)
 {
-	directionalLight = nullptr;
+	lights->clear();
 
 	for (auto child : node->Children)
 	{
@@ -75,18 +74,7 @@ void CollectZoneLeaves(SceneNode* node, std::vector<SceneNode*>* leaves,
 		else if (child->IsZone())
 			leaves->push_back(child);
 		else if (child->IsLight())
-		{
-			switch (child->Ref.LightData->Type)
-			{
-			case LIGHT_TYPE_DIRECTIONAL:
-				*directionalLight = child;
-				break;
-
-			case LIGHT_TYPE_OMNI:
-				omniLights->push_back(child);
-				break;
-			}
-		}
+			lights->push_back(child);
 	}
 }
 
@@ -298,7 +286,7 @@ void BuildSceneGraphHierarchy(SceneNode* zone, const bool bRebuildChildrenZones)
 
 	ZoneData* zoneData = zone->Ref.ZoneData;
 	vector<SceneNode*> leaves;
-	CollectZoneLeaves(zone, &leaves, &zoneData->OmniLights, &zoneData->DirectionalLight);
+	CollectZoneLeaves(zone, &leaves, &zoneData->Lights);
 
 	vector<RegionNode*> leafRegions;
 	for (auto leaf : leaves)

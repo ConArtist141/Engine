@@ -64,6 +64,7 @@ struct NodeCollection
 	std::vector<SceneNode*> StaticMeshes;
 	std::vector<SceneNode*> InstancedStaticMeshes;
 	std::vector<SceneNode*> TerrainPatches;
+	std::vector<SceneNode*> Lights;
 };
 
 class Renderer
