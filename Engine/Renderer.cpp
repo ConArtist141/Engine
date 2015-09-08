@@ -111,8 +111,11 @@ Renderer::Renderer() :
 	samplerStateBlit(nullptr),
 	internalContent(nullptr),
 	deferredDepthStencilBuffer(nullptr),
-	deferredDepthStencilResourceView(nullptr),
+	deferredDepthShaderView(nullptr),
 	deferredDepthStencilView(nullptr),
+	lightRenderTarget(nullptr),
+	lightShaderView(nullptr),
+	lightTexture(nullptr),
 	frameCount(0),
 	instanceCache(DEFAULT_INSTANCE_CACHE_SIZE)
 {
@@ -338,7 +341,7 @@ bool Renderer::InitDeferredTargets()
 		if (FAILED(result))
 			return false;
 
-		deferredShaderResourceViews.push_back(resourceView);
+		deferredShaderViews.push_back(resourceView);
 
 		ID3D11RenderTargetView* renderTargetView;
 		result = device->CreateRenderTargetView(deferredBuffer, nullptr, &renderTargetView);
@@ -354,6 +357,10 @@ bool Renderer::InitDeferredTargets()
 #endif
 	}
 
+	DXGI_FORMAT depthTextureFormat = DXGI_FORMAT_R32_TYPELESS;
+	DXGI_FORMAT depthResourceViewFormat = DXGI_FORMAT_R32_FLOAT;
+	DXGI_FORMAT depthViewFormat = DXGI_FORMAT_D32_FLOAT;
+
 	D3D11_TEXTURE2D_DESC deferredBufferDesc;
 	deferredBufferDesc.ArraySize = 1;
 	deferredBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
@@ -365,7 +372,7 @@ bool Renderer::InitDeferredTargets()
 	deferredBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 	deferredBufferDesc.Width = renderParameters.Extent.Width;
 	deferredBufferDesc.Height = renderParameters.Extent.Height;
-	deferredBufferDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	deferredBufferDesc.Format = depthTextureFormat;
 
 	result = device->CreateTexture2D(&deferredBufferDesc, nullptr, &deferredDepthStencilBuffer);
 
@@ -374,12 +381,12 @@ bool Renderer::InitDeferredTargets()
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
 	ZeroMemory(&resourceViewDesc, sizeof(resourceViewDesc));
-	resourceViewDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	resourceViewDesc.Format = depthResourceViewFormat;
 	resourceViewDesc.Texture2D.MipLevels = 1;
 	resourceViewDesc.Texture2D.MostDetailedMip = 0;
 	resourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 
-	result = device->CreateShaderResourceView(deferredDepthStencilBuffer, &resourceViewDesc, &deferredDepthStencilResourceView);
+	result = device->CreateShaderResourceView(deferredDepthStencilBuffer, &resourceViewDesc, &deferredDepthShaderView);
 
 	if (FAILED(result))
 		return false;
@@ -387,7 +394,7 @@ bool Renderer::InitDeferredTargets()
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
 	ZeroMemory(&depthStencilViewDesc, sizeof(depthStencilViewDesc));
 
-	depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	depthStencilViewDesc.Format = depthViewFormat;
 	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	depthStencilViewDesc.Texture2D.MipSlice = 0;
 
@@ -398,9 +405,39 @@ bool Renderer::InitDeferredTargets()
 
 #if defined(ENABLE_DIRECT3D_DEBUG) && defined(ENABLE_NAMED_OBJECTS)
 	SetDebugObjectName(deferredDepthStencilBuffer, "Deferred Depth Stencil Buffer");
-	SetDebugObjectName(deferredDepthStencilResourceView, "Deferred Depth Stencil Shader Resource View");
+	SetDebugObjectName(deferredDepthShaderView, "Deferred Depth Stencil Shader Resource View");
 	SetDebugObjectName(deferredDepthStencilView, "Deferred Depth Stencil View");
 #endif
+
+	DXGI_FORMAT lightFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	D3D11_TEXTURE2D_DESC lightBufferDesc;
+	lightBufferDesc.ArraySize = 1;
+	lightBufferDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	lightBufferDesc.CPUAccessFlags = 0;
+	lightBufferDesc.MipLevels = 1;
+	lightBufferDesc.MiscFlags = 0;
+	lightBufferDesc.SampleDesc.Count = 1;
+	lightBufferDesc.SampleDesc.Quality = 0;
+	lightBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	lightBufferDesc.Width = renderParameters.Extent.Width;
+	lightBufferDesc.Height = renderParameters.Extent.Height;
+	lightBufferDesc.Format = lightFormat;
+
+	result = device->CreateTexture2D(&lightBufferDesc, nullptr, &lightTexture);
+
+	if (FAILED(result))
+		return false;
+
+	result = device->CreateRenderTargetView(lightTexture, nullptr, &lightRenderTarget);
+
+	if (FAILED(result))
+		return false;
+
+	result = device->CreateShaderResourceView(lightTexture, nullptr, &lightShaderView);
+
+	if (FAILED(result))
+		return false;
 
 	return true;
 }
@@ -705,20 +742,24 @@ void Renderer::DestroyRenderTarget()
 
 void Renderer::DestroyDeferredTargets()
 {
-	for (auto resourceView : deferredShaderResourceViews)
+	for (auto resourceView : deferredShaderViews)
 		resourceView->Release();
 	for (auto targetView : deferredRenderTargets)
 		targetView->Release();
 	for (auto targetBuffer : deferredBuffers)
 		targetBuffer->Release();
 
-	deferredShaderResourceViews.clear();
+	deferredShaderViews.clear();
 	deferredRenderTargets.clear();
 	deferredBuffers.clear();
 
-	SAFE_RELEASE(deferredDepthStencilResourceView);
+	SAFE_RELEASE(deferredDepthShaderView);
 	SAFE_RELEASE(deferredDepthStencilView);
 	SAFE_RELEASE(deferredDepthStencilBuffer);
+
+	SAFE_RELEASE(lightRenderTarget);
+	SAFE_RELEASE(lightShaderView);
+	SAFE_RELEASE(lightTexture);
 }
 
 bool Renderer::Reset(const RenderParams& params)
@@ -832,21 +873,51 @@ void Renderer::DeferredRenderPass(SceneNode* sceneRoot, ICamera* camera,
 	RenderTerrainPatches(nodes.TerrainPatches.begin(), nodes.TerrainPatches.end());
 }
 
-void Renderer::ForwardRenderPass(SceneNode* sceneRoot, ICamera* camera,
-	const vector<ID3D11ShaderResourceView*>& deferredResourceViews, ID3D11ShaderResourceView* deferredDepthResourceView,
-	ID3D11RenderTargetView* renderTarget, ID3D11DepthStencilView* depthStencilView)
+void Renderer::LightRenderPass(SceneNode* sceneRoot, ICamera* camera, 
+	const std::vector<ID3D11ShaderResourceView*>& deferredResourceViews,
+	ID3D11ShaderResourceView* deferredDepthResourceView, 
+	ID3D11RenderTargetView* renderTarget)
 {
-	// Make sure we set all render targets except 0 to nullptr so that we can read from the g-buffers
-	vector<ID3D11RenderTargetView*> renderTargetViews = { renderTarget };
-	for (auto target : deferredResourceViews)
-		renderTargetViews.push_back(nullptr);
-
 	vector<ID3D11ShaderResourceView*> shaderResourceViews;
 	for (size_t i = 0; i < deferredResourceViews.size(); ++i)
 		shaderResourceViews.push_back(deferredResourceViews[i]);
 	shaderResourceViews.push_back(deferredDepthResourceView);
 
-	deviceContext->OMSetRenderTargets(renderTargetViews.size(), renderTargetViews.data(), depthStencilView);
+	deviceContext->OMSetRenderTargets(1, &renderTarget, nullptr);
+	deviceContext->OMSetDepthStencilState(blitDepthStencilState, 0);
+
+	FLOAT color[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	deviceContext->ClearRenderTargetView(renderTarget, color);
+
+	/*UINT stride = elementLayoutBlit.Stride;
+	UINT offset = 0;
+
+	deviceContext->VSSetShader(vertexShaderBlit, nullptr, 0);
+
+	deviceContext->PSSetShader(pixelShaderDeferredComposite, nullptr, 0);
+	deviceContext->PSSetShaderResources(0, shaderResourceViews.size(), shaderResourceViews.data());
+	deviceContext->PSSetSamplers(0, 1, &samplerStateBlit);
+
+	deviceContext->IASetInputLayout(inputLayoutBlit);
+	deviceContext->IASetVertexBuffers(0, 1, &bufferBlitVertices, &stride, &offset);
+
+	deviceContext->Draw(6, 0);*/
+}
+
+void Renderer::ForwardRenderPass(SceneNode* sceneRoot, ICamera* camera,
+	const vector<ID3D11ShaderResourceView*>& deferredResourceViews, 
+	ID3D11ShaderResourceView* deferredDepthResourceView,
+	ID3D11ShaderResourceView* lightResourceView,
+	ID3D11RenderTargetView* renderTarget,
+	ID3D11DepthStencilView* depthStencilView)
+{
+	vector<ID3D11ShaderResourceView*> shaderResourceViews;
+	for (size_t i = 0; i < deferredResourceViews.size(); ++i)
+		shaderResourceViews.push_back(deferredResourceViews[i]);
+	shaderResourceViews.push_back(deferredDepthResourceView);
+	shaderResourceViews.push_back(lightResourceView);
+
+	deviceContext->OMSetRenderTargets(1, &renderTarget, depthStencilView);
 	deviceContext->OMSetDepthStencilState(blitDepthStencilState, 0);
 
 	UINT stride = elementLayoutBlit.Stride;
@@ -861,11 +932,13 @@ void Renderer::ForwardRenderPass(SceneNode* sceneRoot, ICamera* camera,
 	deviceContext->IASetVertexBuffers(0, 1, &bufferBlitVertices, &stride, &offset);
 
 	deviceContext->Draw(6, 0);
+}
 
-	// Clear the shader resources
-	for (size_t i = 0; i < shaderResourceViews.size(); ++i)
-		shaderResourceViews[i] = nullptr;
-	deviceContext->PSSetShaderResources(0, shaderResourceViews.size(), shaderResourceViews.data());
+void Renderer::ClearPixelShaderResources(const size_t resourceCount)
+{
+	unique_ptr<ID3D11ShaderResourceView*[]> resourceViews(new ID3D11ShaderResourceView*[resourceCount]);
+	ZeroMemory(resourceViews.get(), sizeof(ID3D11ShaderResourceView*) * resourceCount);
+	deviceContext->PSSetShaderResources(0, resourceCount, resourceViews.get());
 }
 
 void Renderer::RenderStaticMeshes(vector<SceneNode*>::iterator& begin, vector<SceneNode*>::iterator& end)
@@ -1104,8 +1177,11 @@ void Renderer::RenderFrame(SceneNode* sceneRoot, ICamera* camera)
 		deviceContext->RSSetState(defaultRasterState);
 
 		DeferredRenderPass(sceneRoot, camera, deferredRenderTargets, deferredDepthStencilView);
-		ForwardRenderPass(sceneRoot, camera, deferredShaderResourceViews, deferredDepthStencilResourceView, 
-			forwardRenderTarget, forwardDepthStencilView);
+		LightRenderPass(sceneRoot, camera, deferredShaderViews, deferredDepthShaderView, 
+			lightRenderTarget);
+		ForwardRenderPass(sceneRoot, camera, deferredShaderViews, deferredDepthShaderView,
+			lightShaderView, forwardRenderTarget, forwardDepthStencilView);
+		ClearPixelShaderResources(deferredShaderViews.size() + 2);
 	}
 
 	if (renderParameters.UseVSync)

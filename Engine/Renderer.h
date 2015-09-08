@@ -112,11 +112,18 @@ protected:
 	void DeferredRenderPass(SceneNode* sceneRoot, ICamera* camera,
 		const std::vector<ID3D11RenderTargetView*>& renderTargets, 
 		ID3D11DepthStencilView* depthStencilView);
+	void LightRenderPass(SceneNode* sceneRoot, ICamera* camera,
+		const std::vector<ID3D11ShaderResourceView*>& deferredResourceViews,
+		ID3D11ShaderResourceView* deferredDepthResourceView,
+		ID3D11RenderTargetView* renderTarget);
 	void ForwardRenderPass(SceneNode* sceneRoot, ICamera* camera,
 		const std::vector<ID3D11ShaderResourceView*>& deferredResourceViews,
 		ID3D11ShaderResourceView* deferredDepthResourceView,
+		ID3D11ShaderResourceView* lightResourceView,
 		ID3D11RenderTargetView* renderTarget, 
 		ID3D11DepthStencilView* depthStencilView);
+
+	void ClearPixelShaderResources(const size_t resourceCount);
 
 	void RenderStaticMeshes(std::vector<SceneNode*>::iterator& begin, std::vector<SceneNode*>::iterator& end);
 	void RenderStaticMeshesInstanced(std::vector<SceneNode*>::iterator& begin, std::vector<SceneNode*>::iterator& end);
@@ -139,15 +146,19 @@ private:
 
 	std::vector<DXGI_FORMAT> deferredBufferFormats;
 	std::vector<ID3D11Texture2D*> deferredBuffers;
-	std::vector<ID3D11ShaderResourceView*> deferredShaderResourceViews;
+	std::vector<ID3D11ShaderResourceView*> deferredShaderViews;
 	std::vector<ID3D11RenderTargetView*> deferredRenderTargets;
+
+	ID3D11RenderTargetView* lightRenderTarget;
+	ID3D11Texture2D* lightTexture;
+	ID3D11ShaderResourceView* lightShaderView;
 
 	ID3D11RenderTargetView* forwardRenderTarget;
 	ID3D11Texture2D* forwardDepthStencilTexture;
 	ID3D11DepthStencilView* forwardDepthStencilView;
 
 	ID3D11Texture2D* deferredDepthStencilBuffer;
-	ID3D11ShaderResourceView* deferredDepthStencilResourceView;
+	ID3D11ShaderResourceView* deferredDepthShaderView;
 	ID3D11DepthStencilView* deferredDepthStencilView;
 
 	ID3D11Buffer* bufferBlitVertices;
