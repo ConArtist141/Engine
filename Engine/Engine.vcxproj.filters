@@ -121,5 +121,11 @@
     <FxCompile Include="TerrainPatchPixel.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="DeferredPixel.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="BlitVertex.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

@@ -19,6 +19,12 @@ struct VSInputTerrainPatch
 	float3 normal : NORMAL;
 };
 
+struct VSInputBlit
+{
+	float2 position : POSITION;
+	float2 uv : TEXCOORD;
+};
+
 struct VSOutputStandard
 {
 	float4 position : SV_POSITION;
@@ -26,7 +32,19 @@ struct VSOutputStandard
 	float3 normal : NORMAL;
 };
 
-struct PSOutputForward
+struct VSOutputBlit
+{
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD;
+};
+
+struct PSOutputDeferred
 {
 	float4 albedo : SV_TARGET0;
+	float4 normal : SV_TARGET1;
+};
+
+struct PSOutputComposite
+{
+	float4 color : SV_TARGET0;
 };

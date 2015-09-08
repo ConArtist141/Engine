@@ -18,8 +18,8 @@
 #define STATIC_MESH_PIXEL_SHADER_LOCATION "StaticMeshPixel.cso"
 #define TERRAIN_PATCH_VERTEX_SHADER_LOCATION "TerrainPatchVertex.cso"
 #define TERRAIN_PATCH_PIXEL_SHADER_LOCATION "TerrainPatchPixel.cso"
-#define BLIT_VERTEX_SHADER_LOCATION "CompositeVertex.cso"
-#define BLIT_PIXEL_SHADER_LOCATION "CompositePixel.cso"
+#define BLIT_VERTEX_SHADER_LOCATION "BlitVertex.cso"
+#define DEFERRED_COMPOSITE_PIXEL_SHADER_LOCATION "DeferredPixel.cso"
 
 struct RegionNode;
 class SceneNode;
@@ -92,7 +92,6 @@ public:
 
 	struct
 	{
-		bool bLoadBlitShaders;
 		bool bLoadTerrainPatchShaders;
 	} InitParameters;
 
@@ -102,6 +101,7 @@ protected:
 
 	bool InitWindow(const HWND hWindow, const RenderParams& params);
 	bool InitRenderTarget();
+	bool InitDeferredTargets();
 	bool InitRenderObjects();
 	bool InitInternalShaders();
 	bool InitConstantBuffers();
@@ -109,8 +109,13 @@ protected:
 
 	void NameObjectsDebug();
 
-	void RenderPass(SceneNode* sceneRoot, ICamera* camera, const RenderPassType passType,
-		D3D11_VIEWPORT& viewport, ID3D11RenderTargetView** renderTargets, const size_t renderTargetsCount,
+	void DeferredRenderPass(SceneNode* sceneRoot, ICamera* camera,
+		const std::vector<ID3D11RenderTargetView*>& renderTargets, 
+		ID3D11DepthStencilView* depthStencilView);
+	void ForwardRenderPass(SceneNode* sceneRoot, ICamera* camera,
+		const std::vector<ID3D11ShaderResourceView*>& deferredResourceViews,
+		ID3D11ShaderResourceView* deferredDepthResourceView,
+		ID3D11RenderTargetView* renderTarget, 
 		ID3D11DepthStencilView* depthStencilView);
 
 	void RenderStaticMeshes(std::vector<SceneNode*>::iterator& begin, std::vector<SceneNode*>::iterator& end);
@@ -131,15 +136,21 @@ private:
 	IDXGISwapChain* swapChain;
 	ID3D11Device* device;
 	ID3D11DeviceContext* deviceContext;
-	ID3D11RenderTargetView* backBufferRenderTarget;
 
+	std::vector<DXGI_FORMAT> deferredBufferFormats;
 	std::vector<ID3D11Texture2D*> deferredBuffers;
 	std::vector<ID3D11ShaderResourceView*> deferredShaderResourceViews;
-	std::vector<ID3D11ShaderResourceView*> deferredShaderResourceClear;
 	std::vector<ID3D11RenderTargetView*> deferredRenderTargets;
 
-	ID3D11Buffer* bufferBlitVertices;
+	ID3D11RenderTargetView* forwardRenderTarget;
+	ID3D11Texture2D* forwardDepthStencilTexture;
+	ID3D11DepthStencilView* forwardDepthStencilView;
 
+	ID3D11Texture2D* deferredDepthStencilBuffer;
+	ID3D11ShaderResourceView* deferredDepthStencilResourceView;
+	ID3D11DepthStencilView* deferredDepthStencilView;
+
+	ID3D11Buffer* bufferBlitVertices;
 	ID3D11Buffer* bufferCameraConstants;
 	ID3D11Buffer* bufferStaticMeshInstanceConstants;
 	ID3D11Buffer* bufferTerrainPatchInstanceConstants;
@@ -148,15 +159,13 @@ private:
 	ID3D11VertexShader* vertexShaderStaticMesh;
 	ID3D11VertexShader* vertexShaderStaticMeshInstanced;
 	ID3D11VertexShader* vertexShaderTerrainPatch;
-	ID3D11PixelShader* pixelShaderBlit; 
+	ID3D11PixelShader* pixelShaderDeferredComposite; 
 	ID3D11PixelShader* pixelShaderStaticMesh;
 	ID3D11PixelShader* pixelShaderTerrainPatch;
 
-	ID3D11DepthStencilView* defaultDepthStencilView;
-	ID3D11Texture2D* depthStencilTexture;
-	ID3D11DepthStencilState* forwardPassDepthStencilState;
+	ID3D11DepthStencilState* defaultDepthStencilState;
 	ID3D11DepthStencilState* blitDepthStencilState;
-	ID3D11RasterizerState* forwardPassRasterState;
+	ID3D11RasterizerState* defaultRasterState;
 	ID3D11RasterizerState* wireframeRasterState;
 	ID3D11SamplerState* samplerStateLinearStaticMesh;
 	ID3D11SamplerState* samplerStateBlit;
