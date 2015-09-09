@@ -1134,6 +1134,11 @@ void Renderer::SortMeshNodes(NodeCollection& nodes, ICamera* camera)
 		return !n->MaterialData->IsTransparent;
 	};
 
+	auto compareLights = [](SceneNode* n1, SceneNode* n2)
+	{
+		return n1->Ref.LightData->Type < n2->Ref.LightData->Type;
+	};
+
 	// Reorder the visible meshes for batching
 	auto sortStaticMeshCollection = [&compareDistance, &isOpaque](vector<SceneNode*>& collection)
 	{
@@ -1147,6 +1152,7 @@ void Renderer::SortMeshNodes(NodeCollection& nodes, ICamera* camera)
 	sortStaticMeshCollection(nodes.InstancedStaticMeshes);
 
 	sort(nodes.TerrainPatches.begin(), nodes.TerrainPatches.end(), compareDistance);
+	sort(nodes.Lights.begin(), nodes.Lights.end(), compareLights);
 }
 
 void Renderer::RenderFrame(SceneNode* sceneRoot, ICamera* camera)

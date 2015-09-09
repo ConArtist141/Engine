@@ -139,11 +139,12 @@ void DestroyHierarchyRegion(RegionNode* node, const bool bDestroyChildrenHierarc
 void DestroySceneGraphHierarchy(SceneNode* zone, const bool bDestroyChildrenHierarchies);
 void BuildSceneGraphHierarchy(SceneNode* zone, const bool bRebuildChildrenZones);
 
-SceneNode* CreateSceneGraph();
+SceneNode* CreateSceneGraph(ZoneData* zoneData);
 void DestroySceneGraph(SceneNode* sceneNode);
 SceneNode* CreateStaticMeshNode(StaticMesh* mesh, MaterialData* material, const DirectX::XMFLOAT4X4& transform);
 SceneNode* CreateStaticMeshInstancedNode(StaticMesh* mesh, MaterialData* material, const DirectX::XMFLOAT4X4& transform);
 SceneNode* CreateLightNode(LightType type, LightData* data);
 SceneNode* CreateTerrainPatchNode(TerrainPatch* terrainPatch, const DirectX::XMFLOAT4X4& transform);
+SceneNode* CreateZone(ZoneData* zoneData);
 
 #endif

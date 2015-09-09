@@ -123,7 +123,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			package.SetMaterial("Material2", material2);
 
 			// Create the scene
-			SceneNode* scene = CreateSceneGraph();
+			ZoneData zoneData;
+			zoneData.Name = "World";
+			SceneNode* scene = CreateSceneGraph(&zoneData);
+
 			XMFLOAT4X4 transform;
 			for (int i = -2; i <= 2; ++i)
 			{

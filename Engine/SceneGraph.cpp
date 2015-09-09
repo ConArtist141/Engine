@@ -308,25 +308,15 @@ void BuildSceneGraphHierarchy(SceneNode* zone, const bool bRebuildChildrenZones)
 	CreateHierarchyFromBlob(leafRegions, &zone->Region);
 }
 
-SceneNode* CreateSceneGraph()
+SceneNode* CreateSceneGraph(ZoneData* zoneData)
 {
 	auto infinity = numeric_limits<float>::infinity();
-	auto node = new SceneNode;
+	auto node = CreateZone(zoneData);
 	node->Region.AABB =
 	{
 		{ -infinity, -infinity, -infinity },
 		{ infinity, infinity, infinity }
 	};
-	node->Region.LeafData = nullptr;
-	node->Region.Node1 = nullptr;
-	node->Region.Node2 = nullptr;
-	node->Region.Node3 = nullptr;
-	node->Ref.ZoneData = nullptr;
-	node->Type = NODE_TYPE_ZONE;
-
-	auto identity = XMMatrixIdentity();
-	XMStoreFloat4x4(&node->Transform.Local, identity);
-
 	return node;
 }
 
@@ -378,6 +368,23 @@ SceneNode* CreateTerrainPatchNode(TerrainPatch* terrainPatch, const XMFLOAT4X4& 
 	node->Ref.TerrainPatch = terrainPatch;
 	node->Transform.Local = transform;
 	node->Type = NODE_TYPE_TERRAIN_PATCH;
+
+	return node;
+}
+
+SceneNode* CreateZone(ZoneData* zoneData)
+{
+	auto node = new SceneNode;
+
+	node->Region.LeafData = nullptr;
+	node->Region.Node1 = nullptr;
+	node->Region.Node2 = nullptr;
+	node->Region.Node3 = nullptr;
+	node->Ref.ZoneData = zoneData;
+	node->Type = NODE_TYPE_ZONE;
+
+	auto identity = XMMatrixIdentity();
+	XMStoreFloat4x4(&node->Transform.Local, identity);
 
 	return node;
 }
