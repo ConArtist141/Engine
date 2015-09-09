@@ -36,7 +36,10 @@ enum RenderPassType
 
 enum RenderTargetIndex
 {
-	RENDER_TARGET_INDEX_ALBEDO = 0
+	RENDER_TARGET_INDEX_ALBEDO = 0,
+	RENDER_TARGET_INDEX_NORMAL = 1,
+	RENDER_TARGET_INDEX_DEPTH = 2,
+	RENDER_TARGET_INDEX_LIGHT = 3
 };
 
 template <typename CacheData>
@@ -211,13 +214,13 @@ inline void Renderer::SetMoveSizeEntered(const bool value)
 { bMoveSizeEntered = value; }
 inline ID3D11Device* Renderer::GetDevice() const			
 { return device; }
-inline const InputElementLayout * Renderer::GetElementLayoutStaticMesh() const
+inline const InputElementLayout* Renderer::GetElementLayoutStaticMesh() const
 { return &elementLayoutStaticMesh; }
-inline const InputElementLayout * Renderer::GetElementLayoutStaticMeshInstanced() const
+inline const InputElementLayout* Renderer::GetElementLayoutStaticMeshInstanced() const
 { return &elementLayoutStaticMeshInstanced; }
-inline const InputElementLayout * Renderer::GetElementLayoutBlit() const
+inline const InputElementLayout* Renderer::GetElementLayoutBlit() const
 { return &elementLayoutBlit; }
-inline const InputElementLayout * Renderer::GetElementLayoutTerrainPatch() const
+inline const InputElementLayout* Renderer::GetElementLayoutTerrainPatch() const
 { return &elementLayoutTerrainPatch; }
 
 #endif
