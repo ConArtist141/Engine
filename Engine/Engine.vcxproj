@@ -84,9 +84,11 @@
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="MaterialData.h" />
     <ClInclude Include="Geometry.h" />
+    <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="SceneGraph.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="StaticMesh.h" />
     <ClInclude Include="Terrain.h" />
   </ItemGroup>

@@ -59,6 +59,11 @@ void SphericalCamera::LookAt(const XMFLOAT3& target)
 
 void SphericalCamera::GetFrustum(Frustum* frustum, const Extent2D& viewportSize)
 {
+	GetFrustum(frustum, viewportSize, NearPlane, FarPlane);
+}
+
+void SphericalCamera::GetFrustum(Frustum * frustum, const Extent2D & viewportSize, const float nearPlane, const float farPlane)
+{
 	XMFLOAT3 forward;
 	GetForward(&forward);
 	XMFLOAT3 target;
@@ -66,9 +71,14 @@ void SphericalCamera::GetFrustum(Frustum* frustum, const Extent2D& viewportSize)
 
 	float aspectRatio = (float)viewportSize.Width / (float)viewportSize.Height;
 
-	ConstructFrustum(FieldOfView, FarPlane, NearPlane,
+	ConstructFrustum(FieldOfView, farPlane, nearPlane,
 		Position, target, XMFLOAT3(0.0f, 1.0f, 0.0f),
 		aspectRatio, frustum);
+}
+
+const CameraShadowInfo* SphericalCamera::GetShadowInfo() const
+{
+	return &CascadeInfo;
 }
 
 SphericalCamera::SphericalCamera() :

@@ -179,7 +179,7 @@ bool Renderer::InitWindow(const HWND hWindow, const RenderParams& params)
 	result = adapter->EnumOutputs(0, &adapterOutput);
 
 	UINT modeCount;
-	result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_B8G8R8A8_UNORM,
+	result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM,
 		DXGI_ENUM_MODES_INTERLACED, &modeCount, nullptr);
 
 	DXGI_MODE_DESC* modeDescriptions = new DXGI_MODE_DESC[modeCount];
@@ -280,9 +280,6 @@ bool Renderer::InitRenderTarget()
 	depthTextureDesc.MiscFlags = 0;
 
 	result = device->CreateTexture2D(&depthTextureDesc, nullptr, &forwardDepthStencilTexture);
-
-	if (FAILED(result))
-		return false;
 
 	if (FAILED(result))
 		return false;
@@ -888,20 +885,6 @@ void Renderer::LightRenderPass(SceneNode* sceneRoot, ICamera* camera,
 
 	FLOAT color[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	deviceContext->ClearRenderTargetView(renderTarget, color);
-
-	/*UINT stride = elementLayoutBlit.Stride;
-	UINT offset = 0;
-
-	deviceContext->VSSetShader(vertexShaderBlit, nullptr, 0);
-
-	deviceContext->PSSetShader(pixelShaderDeferredComposite, nullptr, 0);
-	deviceContext->PSSetShaderResources(0, shaderResourceViews.size(), shaderResourceViews.data());
-	deviceContext->PSSetSamplers(0, 1, &samplerStateBlit);
-
-	deviceContext->IASetInputLayout(inputLayoutBlit);
-	deviceContext->IASetVertexBuffers(0, 1, &bufferBlitVertices, &stride, &offset);
-
-	deviceContext->Draw(6, 0);*/
 }
 
 void Renderer::ForwardRenderPass(SceneNode* sceneRoot, ICamera* camera,
